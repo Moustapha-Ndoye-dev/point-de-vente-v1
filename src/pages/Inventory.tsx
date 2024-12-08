@@ -114,7 +114,7 @@ export function Inventory() {
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900">Inventaire</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Inventairesss</h2>
           <select
             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             value={selectedCategoryId}
