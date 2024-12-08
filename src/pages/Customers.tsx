@@ -79,12 +79,18 @@ export function Customers() {
   const handleDelete = async (customerId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
       try {
-        const success = await deleteCustomer(customerId);
-        if (success) {
+        const result = await deleteCustomer(customerId);
+        if (result.success) {
           addNotification('Client supprimé avec succès', 'success');
-          loadCustomers();
+          await loadCustomers();
+        } else {
+          addNotification(
+            result.error || 'Erreur lors de la suppression',
+            'error'
+          );
         }
       } catch (error) {
+        console.error('Erreur:', error);
         addNotification('Erreur lors de la suppression', 'error');
       }
     }

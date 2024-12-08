@@ -84,3 +84,67 @@ export interface DashboardStats {
     unique_customers: number;
     recent_sales: Sale[]; // ou le type approprié
 }
+
+export interface Enterprise {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnterpriseUser {
+  id: string;
+  enterpriseId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  isActive: boolean;
+  isFirstLogin?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin?: string;
+}
+
+export type UserRole = 'admin' | 'seller';
+
+export interface AuthResponse {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  error?: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface Users {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface EnterpriseRegistrationData {
+  enterprise: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  user: RegisterData;
+}

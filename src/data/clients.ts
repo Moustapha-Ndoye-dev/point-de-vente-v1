@@ -1,100 +1,94 @@
 import { supabase } from '../supabaseClient';
 import { Customer } from '../types/types';
 
-// Récupérer tous les clients
-export const fetchCustomers = async (): Promise<Customer[]> => {
+export async function fetchCustomers() {
   const { data, error } = await supabase
     .from('customer')
     .select('*')
     .order('name');
+    
+  if (error) throw error;
+  return data || [];
+}
 
-  if (error) {
-    console.error('Erreur lors de la récupération des clients:', error);
-    return [];
-  }
-
-  // Map backend fields to frontend types if necessary
-  return data.map(customer => ({
-    ...customer,
-    // Ensure all necessary fields are correctly mapped
-  }));
-};
-
-// Rechercher des clients
-export const searchCustomers = async (searchTerm: string): Promise<Customer[]> => {
+export async function searchCustomers(searchTerm: string) {
   const { data, error } = await supabase
     .from('customer')
     .select('*')
-    .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
-    .order('name');
+    .ilike('name', `%${searchTerm}%`);
+    
+  if (error) throw error;
+  return data || [];
+}
 
-  if (error) {
-    console.error('Erreur lors de la recherche des clients:', error);
-    return [];
-  }
-
-  // Map backend fields to frontend types if necessary
-  return data.map(customer => ({
-    ...customer,
-    // Ensure all necessary fields are correctly mapped
-  }));
-};
-
-// Ajouter un client
-export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer | null> => {
+export async function addCustomer(customerData: Omit<Customer, 'id'>) {
   const { data, error } = await supabase
     .from('customer')
     .insert([customerData])
     .select()
     .single();
+    
+  if (error) throw error;
+  return data;
+}
 
-  if (error) {
-    console.error('Erreur lors de l\'ajout du client:', error);
+export async function updateCustomer(id: string, customerData: Omit<Customer, 'id'>) {
+  try {
+    const { data, error } = await supabase
+      .from('customer')
+      .update({
+        name: customerData.name,
+        phone: customerData.phone,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Erreur lors de la mise à jour du client:', error);
+      return null;
+    }
+    return data;
+  } catch (error) {
+    console.error('Erreur inattendue:', error);
     return null;
   }
+}
 
-  return {
-    ...data,
-    // Ensure all necessary fields are correctly mapped
-  };
-};
+export const deleteCustomer = async (id: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Vérifier d'abord si le client a des ventes
+    const { data: sales, error: salesError } = await supabase
+      .from('sale')
+      .select('id')
+      .eq('customer_id', id);
 
-// Modifier un client
-export const updateCustomer = async (
-  id: string,
-  customerData: Partial<Omit<Customer, 'id'>>
-): Promise<Customer | null> => {
-  const { data, error } = await supabase
-    .from('customer')
-    .update(customerData)
-    .eq('id', id)
-    .select()
-    .single();
+    if (salesError) throw salesError;
 
-  if (error) {
-    console.error('Erreur lors de la mise à jour du client:', error);
-    return null;
-  }
+    if (sales && sales.length > 0) {
+      return {
+        success: false,
+        error: 'Ce client ne peut pas être supprimé car il a des ventes associées'
+      };
+    }
 
-  // Map backend fields to frontend types if necessary
-  return {
-    ...data,
-    // Ensure all necessary fields are correctly mapped
-  };
-};
+    // Si pas de ventes, on peut supprimer le client
+    const { error } = await supabase
+      .from('customer')
+      .delete()
+      .eq('id', id);
 
-// Supprimer un client
-export const deleteCustomer = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('customer')
-    .delete()
-    .eq('id', id);
+    if (error) throw error;
 
-  if (error) {
+    return { success: true };
+  } catch (error) {
     console.error('Erreur lors de la suppression du client:', error);
-    return false;
+    return {
+      success: false,
+      error: 'Une erreur est survenue lors de la suppression'
+    };
   }
-  return true;
 };
 
 // Trouver un client par ID
