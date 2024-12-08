@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist',
+    outDir: 'dist',  // Assurez-vous que le build sort dans le répertoire dist
     rollupOptions: {
-      input: 'index.html', // Point d'entrée doit être "index.html"
+      input: 'index.html',  // Le fichier d'entrée principal
     },
   },
 });
