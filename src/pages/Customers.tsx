@@ -57,11 +57,15 @@ export function Customers() {
         if (updated) {
           addNotification('Client mis à jour avec succès', 'success');
           setEditingCustomer(null);
+        } else {
+          addNotification('Erreur lors de la mise à jour du client', 'error');
         }
       } else {
         const added = await addCustomer(customerData);
         if (added) {
           addNotification('Client ajouté avec succès', 'success');
+        } else {
+          addNotification('Erreur lors de l\'ajout du client', 'error');
         }
       }
       setShowForm(false);

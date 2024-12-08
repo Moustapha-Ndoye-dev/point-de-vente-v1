@@ -41,7 +41,7 @@ export const searchCustomers = async (searchTerm: string): Promise<Customer[]> =
 };
 
 // Ajouter un client
-export const addCustomer = async (customerData: Omit<Customer, 'id'>): Promise<Customer | null> => {
+export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer | null> => {
   const { data, error } = await supabase
     .from('customer')
     .insert([customerData])
@@ -53,7 +53,6 @@ export const addCustomer = async (customerData: Omit<Customer, 'id'>): Promise<C
     return null;
   }
 
-  // Map backend fields to frontend types if necessary
   return {
     ...data,
     // Ensure all necessary fields are correctly mapped
