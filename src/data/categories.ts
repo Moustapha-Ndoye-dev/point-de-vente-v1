@@ -2,68 +2,122 @@
 import { supabase } from '../supabaseClient';
 import { Category } from '../types/types';
 
-// Cette fonction permet de récupérer toutes les catégories de la base de données.
-export const fetchCategories = async (): Promise<Category[]> => {
+// Récupérer toutes les catégories d'une entreprise
+export const fetchCategories = async (enterpriseId: string): Promise<Category[]> => {
   const { data, error } = await supabase
-      .from('categories')
-      .select('*'); // Cette ligne sélectionne toutes les colonnes de la table 'categories'.
-   if (error) {
-      console.error('Erreur lors de la récupération des catégories:', error);
-      return []; // Si une erreur survient, cette fonction renvoie un tableau vide.
+    .from('categories')
+    .select(`
+      *,
+      products:products(*)
+    `)
+    .eq('enterprise_id', enterpriseId)
+    .order('name');
+  
+  if (error) {
+    console.error('Erreur lors de la récupération des catégories:', error);
+    return [];
   }
-  return data; // Si tout se passe bien, cette fonction renvoie les données récupérées.
+  return data || [];
 };
 
-// Cette fonction permet d'ajouter une nouvelle catégorie à la base de données.
-export const addCategory = async (name: string, color: string): Promise<Category | null> => {
+// Ajouter une nouvelle catégorie
+export const addCategory = async (
+  name: string, 
+  color: string, 
+  enterpriseId: string
+): Promise<Category | null> => {
   const { data, error } = await supabase
-      .from('categories')
-      .insert([{ name, color }]) // Cette ligne insère une nouvelle ligne dans la table 'categories' avec le nom et la couleur spécifiés.
-      .single(); // Cette fonctionnalité permet de récupérer la ligne insérée.
-   if (error) {
-      console.error('Erreur lors de l\'ajout de la catégorie:', error);
-      return null; // Si une erreur survient, cette fonction renvoie null.
+    .from('categories')
+    .insert([{ 
+      name, 
+      color, 
+      enterprise_id: enterpriseId 
+    }])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Erreur lors de l\'ajout de la catégorie:', error);
+    return null;
   }
-  return data; // Si tout se passe bien, cette fonction renvoie la catégorie ajoutée.
+  return data;
 };
 
-// Cette fonction permet de modifier une catégorie existante dans la base de données.
-export const updateCategory = async (id: string, name: string, color: string): Promise<Category | null> => {
+// Modifier une catégorie
+export const updateCategory = async (
+  id: string, 
+  name: string, 
+  color: string, 
+  enterpriseId: string
+): Promise<Category | null> => {
   const { data, error } = await supabase
-      .from('categories')
-      .update({ name, color }) // Cette ligne met à jour le nom et la couleur d'une catégorie spécifiée.
-      .eq('id', id) // Cette ligne spécifie l'identifiant de la catégorie à mettre à jour.
-      .single(); // Cette fonctionnalité permet de récupérer la ligne mise à jour.
-   if (error) {
-      console.error('Erreur lors de la mise à jour de la catégorie:', error);
-      return null; // Si une erreur survient, cette fonction renvoie null.
+    .from('categories')
+    .update({ name, color })
+    .eq('id', id)
+    .eq('enterprise_id', enterpriseId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Erreur lors de la mise à jour de la catégorie:', error);
+    return null;
   }
-  return data; // Si tout se passe bien, cette fonction renvoie la catégorie mise à jour.
+  return data;
 };
 
-// Cette fonction permet de supprimer une catégorie de la base de données.
-export const deleteCategory = async (id: string): Promise<boolean> => {
+// Supprimer une catégorie
+export const deleteCategory = async (
+  categoryId: string, 
+  enterpriseId: string
+): Promise<boolean> => {
+  // Vérifier si la catégorie a des produits
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select('id')
+    .eq('category_id', categoryId)
+    .eq('enterprise_id', enterpriseId);
+
+  if (productsError) {
+    console.error('Erreur lors de la vérification des produits:', productsError);
+    return false;
+  }
+
+  if (products && products.length > 0) {
+    console.error('La catégorie contient des produits et ne peut pas être supprimée');
+    return false;
+  }
+
   const { error } = await supabase
-      .from('categories')
-      .delete() // Cette ligne supprime une ligne de la table 'categories'.
-      .eq('id', id); // Cette ligne spécifie l'identifiant de la catégorie à supprimer.
-   if (error) {
-      console.error('Erreur lors de la suppression de la catégorie:', error);
-      return false; // Si une erreur survient, cette fonction renvoie false.
+    .from('categories')
+    .delete()
+    .eq('id', categoryId)
+    .eq('enterprise_id', enterpriseId);
+
+  if (error) {
+    console.error('Erreur lors de la suppression de la catégorie:', error);
+    return false;
   }
-  return true; // Si tout se passe bien, cette fonction renvoie true.
+  return true;
 };
 
-// Cette fonction permet de récupérer une catégorie spécifique par son identifiant.
-export const fetchCategoryById = async (id: string): Promise<Category | null> => {
+// Récupérer une catégorie par ID
+export const getCategoryById = async (
+  id: string, 
+  enterpriseId: string
+): Promise<Category | null> => {
   const { data, error } = await supabase
-      .from('categories')
-      .select('*') // Cette ligne sélectionne toutes les colonnes de la table 'categories'.
-      .eq('id', id) // Cette ligne spécifie l'identifiant de la catégorie à récupérer.
-      .single(); // Cette fonctionnalité permet de récupérer la ligne correspondante.
-   if (error) {
-      console.error('Erreur lors de la récupération de la catégorie par ID:', error);
-      return null; // Si une erreur survient, cette fonction renvoie null.
+    .from('categories')
+    .select(`
+      *,
+      products:products(*)
+    `)
+    .eq('id', id)
+    .eq('enterprise_id', enterpriseId)
+    .single();
+
+  if (error) {
+    console.error('Erreur lors de la récupération de la catégorie:', error);
+    return null;
   }
-  return data; // Si tout se passe bien, cette fonction renvoie la catégorie récupérée.
+  return data;
 };

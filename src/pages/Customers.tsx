@@ -6,13 +6,16 @@ import { fetchCustomers, addCustomer, updateCustomer, deleteCustomer, searchCust
 import { useNotifications } from '../contexts/NotificationContext';
 import  Pagination  from '../components/Pagination';
 import { usePagination } from '../hooks/usePagination';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 export function Customers() {
+  const { enterprise } = useEnterprise();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { addNotification } = useNotifications();
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     currentItems: currentCustomers,
@@ -23,9 +26,27 @@ export function Customers() {
     changeItemsPerPage
   } = usePagination(customers);
 
+  const loadCustomers = async () => {
+    if (!enterprise?.id) {
+      addNotification('Erreur: ID entreprise non disponible', 'error');
+      return;
+    }
+    try {
+      const data = await fetchCustomers(enterprise.id);
+      setCustomers(data);
+    } catch (error) {
+      console.error('Erreur loadCustomers:', error);
+      addNotification('Erreur lors du chargement des clients', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadCustomers();
-  }, []);
+    if (enterprise?.id) {
+      loadCustomers();
+    }
+  }, [enterprise?.id]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -38,56 +59,59 @@ export function Customers() {
     }
   }, [searchTerm]);
 
-  const loadCustomers = async () => {
-    const data = await fetchCustomers();
-    setCustomers(data);
-  };
-
   const handleSearch = async () => {
     if (searchTerm.trim()) {
-      const results = await searchCustomers(searchTerm);
+      if (!enterprise?.id) {
+        addNotification('Erreur: ID entreprise non disponible', 'error');
+        return;
+      }
+      const results = await searchCustomers(searchTerm, enterprise.id);
       setCustomers(results);
     }
   };
 
   const handleSubmit = async (customerData: Omit<Customer, 'id'>) => {
+    if (!enterprise?.id) {
+      addNotification('Erreur: ID entreprise non disponible', 'error');
+      return;
+    }
     try {
       if (editingCustomer) {
-        const updated = await updateCustomer(editingCustomer.id, customerData);
-        if (updated) {
+        const updatedCustomer = await updateCustomer(
+          editingCustomer.id,
+          customerData,
+          enterprise.id
+        );
+        if (updatedCustomer) {
           addNotification('Client mis à jour avec succès', 'success');
-          setEditingCustomer(null);
-        } else {
-          addNotification('Erreur lors de la mise à jour du client', 'error');
         }
       } else {
-        const added = await addCustomer(customerData);
-        if (added) {
+        const newCustomer = await addCustomer(customerData, enterprise.id);
+        if (newCustomer) {
           addNotification('Client ajouté avec succès', 'success');
-        } else {
-          addNotification('Erreur lors de l\'ajout du client', 'error');
         }
       }
       setShowForm(false);
-      loadCustomers();
+      await loadCustomers();
     } catch (error) {
-      console.error('Erreur:', error);
-      addNotification('Une erreur est survenue', 'error');
+      console.error('Erreur handleSubmit:', error);
+      addNotification('Erreur lors de l\'enregistrement du client', 'error');
     }
   };
 
   const handleDelete = async (customerId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
       try {
-        const result = await deleteCustomer(customerId);
+        if (!enterprise?.id) {
+          addNotification('Erreur: ID entreprise non disponible', 'error');
+          return;
+        }
+        const result = await deleteCustomer(customerId, enterprise.id);
         if (result.success) {
           addNotification('Client supprimé avec succès', 'success');
           await loadCustomers();
         } else {
-          addNotification(
-            result.error || 'Erreur lors de la suppression',
-            'error'
-          );
+          addNotification(result.error || 'Erreur lors de la suppression', 'error');
         }
       } catch (error) {
         console.error('Erreur:', error);

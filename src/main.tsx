@@ -1,20 +1,20 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
-import { CurrencyProvider } from './contexts/CurrencyContext';
+import { EnterpriseProvider } from './contexts/EnterpriseContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './i18n/config';
 
 createRoot(document.getElementById('app')!).render(
   <StrictMode>
-    <LanguageProvider>
-      <NotificationProvider>
-        <CurrencyProvider>
+    <EnterpriseProvider>
+      <LanguageProvider>
+        <NotificationProvider>
           <App />
-        </CurrencyProvider>
-      </NotificationProvider>
-    </LanguageProvider>
+        </NotificationProvider>
+      </LanguageProvider>
+    </EnterpriseProvider>
   </StrictMode>,
 );

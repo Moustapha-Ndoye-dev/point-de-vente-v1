@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertTriangle, X, PackageSearch } from 'lucide-react';
 import { Product, Category } from '../types/types';
 import { ProductForm } from '../components/ProductForm';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -8,12 +8,13 @@ import { usePagination } from '../hooks/usePagination';
 import { fetchProducts, deleteProduct, updateProduct, addProduct } from '../data/products';
 import { useNotifications } from '../contexts/NotificationContext';
 import { fetchCategories } from '../data/categories';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 // Seuil de stock faible
 const LOW_STOCK_THRESHOLD = 5;
 
 export function Inventory() {
-  const { addNotification } = useNotifications(); // Ensure it's used or remove if unused
+  const { addNotification } = useNotifications();
   const [products, setProducts] = useState<Product[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -21,6 +22,8 @@ export function Inventory() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   
+  const { enterprise } = useEnterprise();
+
   const {
     currentItems: currentProducts,
     currentPage,
@@ -30,37 +33,49 @@ export function Inventory() {
     changeItemsPerPage
   } = usePagination(products);
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      const productsFromDB = await fetchProducts(selectedCategoryId || undefined);
+  const loadProducts = async () => {
+    if (!enterprise?.id) return;
+    
+    try {
+      const productsFromDB = await fetchProducts(enterprise.id);
       setProducts(productsFromDB);
-      
-      // Vérifier les produits en rupture de stock
+
+      // Vérifiez les niveaux de stock et déclenchez des notifications
       productsFromDB.forEach(product => {
-        if (product.stock === 0) {
-          addNotification(`${product.name} est en rupture de stock!`, 'error');
-        } else if (product.stock <= LOW_STOCK_THRESHOLD) {
-          addNotification(`${product.name} est en stock faible (${product.stock} restants)`, 'warning');
+        if (product.stock <= LOW_STOCK_THRESHOLD) {
+          addNotification(`Le stock du produit "${product.name}" est faible.`, 'warning');
         }
       });
-    };
-    loadProducts();
-  }, [selectedCategoryId, addNotification]); // Removed 'notifications' from dependencies
-  
+    } catch (error) {
+      addNotification('Erreur lors du chargement des produits', 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (enterprise?.id) {
+      loadProducts();
+    }
+  }, [enterprise?.id, selectedCategoryId]);
+
   useEffect(() => {
     const loadCategories = async () => {
-      const categoriesFromDB = await fetchCategories();
-      setCategories(categoriesFromDB);
+      if (enterprise?.id) {
+        const categoriesFromDB = await fetchCategories(enterprise.id);
+        setCategories(categoriesFromDB);
+      }
     };
     loadCategories();
-  }, []);
+  }, [enterprise?.id]);
 
   const handleSubmit = async (productData: Omit<Product, 'id'>) => {
     try {
-      console.log('Données à envoyer:', productData);
+      if (!enterprise?.id) {
+        addNotification('Erreur: Entreprise non identifiée', 'error');
+        return;
+      }
+
       if (editingProduct) {
-        const updated = await updateProduct(editingProduct.id, productData);
-        console.log('Réponse update:', updated);
+        const updated = await updateProduct(editingProduct.id, productData, enterprise.id);
         if (updated) {
           addNotification('Produit mis à jour avec succès', 'success');
           setEditingProduct(null);
@@ -68,8 +83,7 @@ export function Inventory() {
           throw new Error('Échec de la mise à jour');
         }
       } else {
-        const added = await addProduct(productData);
-        console.log('Réponse add:', added);
+        const added = await addProduct({ ...productData, enterpriseId: enterprise.id }, enterprise.id);
         if (added) {
           addNotification('Produit ajouté avec succès', 'success');
         } else {
@@ -77,8 +91,7 @@ export function Inventory() {
         }
       }
       setShowForm(false);
-      const productsFromDB = await fetchProducts(selectedCategoryId || undefined);
-      setProducts(productsFromDB);
+      loadProducts();
     } catch (error) {
       console.error('Erreur:', error);
       addNotification('Une erreur est survenue', 'error');
@@ -88,13 +101,20 @@ export function Inventory() {
   const handleDelete = async (productId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
       try {
-        const success = await deleteProduct(productId);
+        if (!enterprise?.id) {
+          addNotification('Erreur: Entreprise non identifiée', 'error');
+          return;
+        }
+        
+        const success = await deleteProduct(productId, enterprise.id);
         if (success) {
           addNotification('Produit supprimé avec succès', 'success');
-          const updatedProducts = products.filter((p) => p.id !== productId);
-          setProducts(updatedProducts);
+          loadProducts();
+        } else {
+          throw new Error('Échec de la suppression');
         }
       } catch (error) {
+        console.error('Erreur:', error);
         addNotification('Erreur lors de la suppression', 'error');
       }
     }
@@ -114,7 +134,7 @@ export function Inventory() {
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900">Inventairess</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Inventaire</h2>
           <select
             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             value={selectedCategoryId}
@@ -169,12 +189,21 @@ export function Inventory() {
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    {product.imageUrl && (
+                    {product.imageUrl ? (
                       <img
-                        src={product.imageUrl}
+                        src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${product.imageUrl}`}
                         alt={product.name}
                         className="h-10 w-10 rounded-full object-cover mr-3"
+                        onError={(e) => {
+                          console.error('Erreur de chargement image:', e);
+                          e.currentTarget.src = '/placeholder-product.png';
+                          e.currentTarget.onerror = null;
+                        }}
                       />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
+                        <PackageSearch className="h-6 w-6 text-gray-400" />
+                      </div>
                     )}
                     <div className="text-sm font-medium text-gray-900">{product.name}</div>
                   </div>
@@ -241,8 +270,8 @@ export function Inventory() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 shadow-lg">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">
                 {editingProduct ? 'Modifier le produit' : 'Nouveau produit'}
               </h3>
@@ -256,6 +285,8 @@ export function Inventory() {
             <ProductForm
               onSubmit={handleSubmit}
               initialProduct={editingProduct}
+              categories={categories}
+              onClose={() => setShowForm(false)}
             />
           </div>
         </div>

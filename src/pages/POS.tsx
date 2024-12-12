@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Trash2, Plus, Minus, X, DollarSign, CreditCard, UserRound } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, X, DollarSign, CreditCard, UserRound, PackageSearch } from 'lucide-react';
 import { Product, Customer, CartItem, PaymentDetails, Category, Sale } from '../types/types';
 import { fetchProducts } from '../data/products';
 import { fetchCustomers } from '../data/clients';
@@ -8,8 +8,10 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { fetchCategories } from '../data/categories';
 import { Receipt } from '../components/Receipt';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 export function POS() {
+  const { enterprise, loading } = useEnterprise();
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -24,27 +26,65 @@ export function POS() {
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const { formatAmount } = useCurrency();
   const { addNotification } = useNotifications();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadProducts();
-    loadCustomers();
-    loadCategories();
-  }, []);
+    const loadData = async () => {
+      if (!enterprise?.id) {
+        console.error('Enterprise ID manquant');
+        setIsLoading(false);
+        return;
+      }
 
-  const loadProducts = async () => {
-    const data = await fetchProducts();
-    setProducts(data);
-  };
+      try {
+        const [productsData, customersData, categoriesData] = await Promise.all([
+          fetchProducts(enterprise.id),
+          fetchCustomers(enterprise.id),
+          fetchCategories(enterprise.id)
+        ]);
 
-  const loadCustomers = async () => {
-    const data = await fetchCustomers();
-    setCustomers(data);
-  };
+        if (productsData) setProducts(productsData);
+        if (customersData) setCustomers(customersData);
+        if (categoriesData) setCategories(categoriesData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        addNotification('Erreur lors du chargement des données', 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const loadCategories = async () => {
-    const data = await fetchCategories();
-    setCategories(data);
-  };
+    if (!loading) {
+      loadData();
+    }
+  }, [loading, enterprise?.id, addNotification]);
+
+  if (loading || isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!enterprise?.id) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center text-red-600">
+          <p>Erreur : Session non valide</p>
+          <button 
+            onClick={() => {/* logique de redirection vers login */}}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          >
+            Se connecter
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const filteredProducts = products.filter(product =>
     (selectedCategory ? product.categoryId === selectedCategory : true) &&
@@ -98,6 +138,15 @@ export function POS() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
+  const loadProducts = async () => {
+    if (!enterprise?.id) {
+      console.error('Enterprise ID is not set');
+      return;
+    }
+    const data = await fetchProducts(enterprise.id);
+    setProducts(data);
+  };
+
   const handlePayment = async () => {
     if (paymentMethod === 'debt' && !selectedCustomer) {
       addNotification('Veuillez sélectionner un client pour la dette', 'error');
@@ -109,27 +158,77 @@ export function POS() {
       return;
     }
 
+    if (!enterprise?.id) {
+      addNotification('Erreur: ID entreprise manquant', 'error');
+      return;
+    }
+
     const paymentDetails: PaymentDetails = {
       method: paymentMethod,
       amount: paymentAmount,
       customer_id: selectedCustomer?.id
     };
 
-    const sale = await createSale(cart, paymentDetails, dueDate);
+    const sale = await createSale(cart, paymentDetails, enterprise.id, dueDate);
     
     if (sale) {
+      await loadProducts();
       addNotification('Vente effectuée avec succès', 'success');
-      setCompletedSale(sale); // Set the completed sale
+      setCompletedSale(sale);
       setCart([]);
       setShowPaymentModal(false);
       setSelectedCustomer(null);
       setPaymentMethod('cash');
       setPaymentAmount(0);
       setDueDate('');
-      loadProducts(); // Recharger les produits pour mettre à jour les stocks
     } else {
       addNotification('Erreur lors de la vente', 'error');
     }
+  };
+
+  const ProductCard = ({ product }: { product: Product }) => {
+    const getImageUrl = (imageUrl: string | null) => {
+      if (!imageUrl) return '/placeholder-product.png';
+      if (imageUrl.startsWith('http')) return imageUrl;
+      return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${imageUrl}`;
+    };
+
+    return (
+      <div 
+        className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => addToCart(product)}
+      >
+        {product.imageUrl ? (
+          <img
+            src={getImageUrl(product.imageUrl)}
+            alt={product.name}
+            className="w-full h-32 object-cover rounded-md mb-2"
+            onError={(e) => {
+              console.error('Erreur de chargement image:', e);
+              e.currentTarget.src = '/placeholder-product.png';
+              e.currentTarget.onerror = null;
+            }}
+          />
+        ) : (
+          <div className="w-full h-32 bg-gray-100 rounded-md mb-2 flex items-center justify-center">
+            <PackageSearch className="h-12 w-12 text-gray-400" />
+          </div>
+        )}
+        <h3 className="font-semibold text-gray-800 text-sm">{product.name}</h3>
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-sm font-bold text-indigo-600">
+            {formatAmount(product.price)}
+          </span>
+          <span className={`text-xs font-medium ${
+            product.stock === 0 ? 'text-red-600' :
+            product.stock <= 5 ? 'text-yellow-600' :
+            'text-green-600'
+          }`}>
+            Stock: {product.stock}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -166,32 +265,7 @@ export function POS() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-lg shadow-md border border-gray-200 p-2 hover:shadow-xl transition-shadow cursor-pointer transform hover:scale-105"
-              onClick={() => addToCart(product)}
-            >
-              {product.imageUrl && (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-32 object-cover rounded-md mb-2"
-                />
-              )}
-              <h3 className="font-semibold text-gray-800 text-sm">{product.name}</h3>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-sm font-bold text-indigo-600">
-                  {formatAmount(product.price)}
-                </span>
-                <span className={`text-xs font-medium ${
-                  product.stock === 0 ? 'text-red-600' :
-                  product.stock <= 5 ? 'text-yellow-600' :
-                  'text-green-600'
-                }`}>
-                  Stock: {product.stock}
-                </span>
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

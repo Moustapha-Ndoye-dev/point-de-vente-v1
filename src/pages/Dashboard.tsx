@@ -3,6 +3,7 @@ import { BanknoteIcon, Package, TrendingUp, Users } from 'lucide-react';
 import { Sale, Debt, Product } from '../types/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 import { fetchSalesHistory, fetchDailyItemsSold, fetchMonthlyItemsSold, fetchDailySalesTotal, fetchMonthlySalesTotal } from '../data/sales';
 import { fetchDebts } from '../data/debts';
 import { fetchTotalCustomers } from '../data/clients';
@@ -11,6 +12,8 @@ import { fetchProducts } from '../data/products';
 type TimeRange = 'day' | 'month';
 
 export function Dashboard() {
+  const { enterprise } = useEnterprise();
+  const enterpriseId = enterprise?.id;
   const [timeRange, setTimeRange] = useState<TimeRange>('day');
   const { formatAmount } = useCurrency();
   const [sales, setSales] = useState<Sale[]>([]);
@@ -22,12 +25,14 @@ export function Dashboard() {
 
   useEffect(() => {
     const loadData = async () => {
-      const salesFromDB = await fetchSalesHistory();
-      const debtsFromDB = await fetchDebts({});
-      const totalCustomersFromDB = await fetchTotalCustomers();
-      const itemsSoldFromDB = timeRange === 'day' ? await fetchDailyItemsSold() : await fetchMonthlyItemsSold();
-      const totalSalesFromDB = timeRange === 'day' ? await fetchDailySalesTotal() : await fetchMonthlySalesTotal();
-      const productsFromDB = await fetchProducts();
+      if (!enterpriseId) return;
+
+      const salesFromDB = await fetchSalesHistory(enterpriseId);
+      const debtsFromDB = await fetchDebts(enterpriseId, {});
+      const totalCustomersFromDB = await fetchTotalCustomers(enterpriseId);
+      const itemsSoldFromDB = timeRange === 'day' ? await fetchDailyItemsSold(enterpriseId) : await fetchMonthlyItemsSold(enterpriseId);
+      const totalSalesFromDB = timeRange === 'day' ? await fetchDailySalesTotal(enterpriseId) : await fetchMonthlySalesTotal(enterpriseId);
+      const productsFromDB = await fetchProducts(enterpriseId);
 
       setSales(salesFromDB);
       setDebts(debtsFromDB);
@@ -37,12 +42,12 @@ export function Dashboard() {
       setProducts(productsFromDB);
     };
     loadData();
-  }, [timeRange]);
+  }, [timeRange, enterpriseId]);
 
   const stats = useMemo(() => {
     const now = new Date();
     const filteredSales = sales.filter(sale => {
-      const saleDate = new Date(sale.date);
+      const saleDate = new Date(sale.createdAt);
       if (timeRange === 'day') {
         return saleDate.toDateString() === now.toDateString();
       } else {
@@ -52,7 +57,7 @@ export function Dashboard() {
     });
 
     const filteredDebts = debts.filter(debt => {
-      const debtDate = new Date(debt.createdAt); // Changed created_at to createdAt
+      const debtDate = new Date(debt.createdAt);
       if (timeRange === 'day') {
         return debtDate.toDateString() === now.toDateString();
       } else {
@@ -61,12 +66,12 @@ export function Dashboard() {
       }
     });
 
-    const uniqueCustomers = new Set(filteredSales.map(sale => sale.customer_id)).size;
+    const uniqueCustomers = new Set(filteredSales.map(sale => sale.customerId)).size;
     
     // Calculate total, pending and overdue debts
     const totalDebts = filteredDebts.reduce((sum, debt) => sum + (debt.settled ? 0 : debt.amount), 0);
     const totalOverdueDebts = filteredDebts.reduce((sum, debt) => {
-      if (!debt.settled && new Date(debt.dueDate) < now) { // Changed due_date to dueDate
+      if (!debt.settled && new Date(debt.dueDate) < now) {
         return sum + debt.amount;
       }
       return sum;
@@ -74,7 +79,7 @@ export function Dashboard() {
 
     // Get payment method distribution
     const paymentMethods = filteredSales.reduce((acc: Record<string, number>, sale) => {
-      acc[sale.payment_method] = (acc[sale.payment_method] || 0) + sale.total;
+      acc[sale.paymentMethod] = (acc[sale.paymentMethod] || 0) + sale.total;
       return acc;
     }, {});
 
@@ -108,7 +113,7 @@ export function Dashboard() {
       recentSales: [...filteredSales].sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       ).slice(0, 5),
-      totalCustomers // Ensure totalCustomers is included in the stats
+      totalCustomers
     };
   }, [sales, timeRange, debts, itemsSold, totalSales, totalCustomers]);
 

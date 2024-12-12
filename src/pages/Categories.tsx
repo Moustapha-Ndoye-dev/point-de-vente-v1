@@ -6,9 +6,11 @@ import Pagination from '../components/Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { fetchCategories, deleteCategory, updateCategory, addCategory } from '../data/categories';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 export function Categories() {
   const { addNotification } = useNotifications();
+  const { enterprise } = useEnterprise();
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('categories');
@@ -29,24 +31,28 @@ export function Categories() {
 
   useEffect(() => {
     const loadCategories = async () => {
-      const categoriesFromDB = await fetchCategories();
-      setCategories(categoriesFromDB);
+      if (enterprise?.id) {
+        const categoriesFromDB = await fetchCategories(enterprise.id);
+        setCategories(categoriesFromDB);
+      }
     };
     loadCategories();
-  }, []); // Charger les catégories au démarrage
+  }, [enterprise?.id]);
 
   const handleSubmit = async (categoryData: Omit<Category, 'id'>) => {
     try {
+      if (!enterprise?.id) return;
+      
       if (editingCategory) {
-        await updateCategory(editingCategory.id, categoryData.name, categoryData.color);
+        await updateCategory(editingCategory.id, categoryData.name, categoryData.color, enterprise.id);
         addNotification('Catégorie mise à jour avec succès', 'success');
         setEditingCategory(null);
       } else {
-        await addCategory(categoryData.name, categoryData.color);
+        await addCategory(categoryData.name, categoryData.color, enterprise.id);
         addNotification('Catégorie ajoutée avec succès', 'success');
       }
       setShowForm(false);
-      const categoriesFromDB = await fetchCategories();
+      const categoriesFromDB = await fetchCategories(enterprise.id);
       setCategories(categoriesFromDB);
     } catch (error) {
       addNotification('Une erreur est survenue', 'error');
@@ -56,7 +62,8 @@ export function Categories() {
   const handleDelete = async (categoryId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       try {
-        const success = await deleteCategory(categoryId);
+        if (!enterprise?.id) return;
+        const success = await deleteCategory(categoryId, enterprise.id);
         if (success) {
           const updatedCategories = categories.filter((c) => c.id !== categoryId);
           setCategories(updatedCategories);

@@ -7,8 +7,11 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { fetchDebts, markDebtAsPaid, fetchCustomers } from '../data/debts';
 import { usePagination } from '../hooks/usePagination';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 export function Debts() {
+  const { enterprise } = useEnterprise();
+  const enterpriseId = enterprise?.id;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'pending' | 'settled' | 'overdue'>('pending');
   const [timeRange, setTimeRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
@@ -33,6 +36,8 @@ export function Debts() {
   } = usePagination(debts, 10);
 
   const loadData = useCallback(async () => {
+    if (!enterpriseId) return;
+    
     try {
       const filters: any = {};
 
@@ -50,7 +55,7 @@ export function Debts() {
       filters.limit = itemsPerPage;
       filters.offset = (currentPage - 1) * itemsPerPage;
 
-      const fetchedDebts = await fetchDebts(filters);
+      const fetchedDebts = await fetchDebts(enterpriseId!, filters);
       setDebts(fetchedDebts);
 
       const fetchedCustomers = await fetchCustomers();
@@ -63,7 +68,7 @@ export function Debts() {
       console.error('Erreur lors du chargement des dettes:', error);
       addNotification('Erreur lors du chargement des dettes.', 'error');
     }
-  }, [filterType, timeRange, currentPage, itemsPerPage, addNotification]);
+  }, [filterType, timeRange, currentPage, itemsPerPage, addNotification, enterpriseId]);
 
   useEffect(() => {
     loadData();
@@ -119,6 +124,8 @@ export function Debts() {
       debtId: selectedDebtId,
       amount: paymentAmount,
       date: new Date().toISOString(),
+      enterpriseId: enterpriseId!,
+      createdAt: new Date().toISOString(),
     };
 
     setPayments(prev => [...prev, newPayment]);

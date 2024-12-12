@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Product, Category } from '../types/types';
-import { fetchCategories } from '../data/categories';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 import { uploadProductImage } from '../utils/storage';
+import { PackageSearch } from 'lucide-react';
 
 interface ProductFormProps {
-  onSubmit: (product: Omit<Product, 'id'>) => void;
-  initialProduct: Product | null | undefined;
+  onSubmit: (data: Omit<Product, 'id'>) => Promise<void>;
+  initialProduct?: Product | null;
+  categories: Category[];
+  onClose?: () => void;
 }
 
-export function ProductForm({ onSubmit, initialProduct }: ProductFormProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
+export function ProductForm({ onSubmit, initialProduct, categories, onClose }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: initialProduct?.name || '',
     price: initialProduct?.price?.toString() || '',
@@ -19,20 +21,22 @@ export function ProductForm({ onSubmit, initialProduct }: ProductFormProps) {
     imageUrl: initialProduct?.imageUrl || ''
   });
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      const categoriesData = await fetchCategories();
-      setCategories(categoriesData);
-    };
-    loadCategories();
-  }, []);
+  const { enterprise } = useEnterprise();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.categoryId) {
+      alert('Veuillez sélectionner une catégorie');
+      return;
+    }
+    
     onSubmit({
       ...formData,
       price: parseFloat(formData.price) || 0,
-      stock: parseInt(formData.stock) || 0
+      stock: parseInt(formData.stock) || 0,
+      enterpriseId: enterprise?.id || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     });
   };
 
@@ -120,12 +124,20 @@ export function ProductForm({ onSubmit, initialProduct }: ProductFormProps) {
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             onChange={handleImageChange}
           />
-          {formData.imageUrl && (
+          {formData.imageUrl ? (
             <img
-              src={formData.imageUrl}
+              src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${formData.imageUrl}`}
               alt="Aperçu"
               className="h-8 w-8 object-cover rounded ml-2"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder-product.png';
+                e.currentTarget.onerror = null;
+              }}
             />
+          ) : (
+            <div className="h-8 w-8 rounded bg-gray-200 ml-2 flex items-center justify-center">
+              <PackageSearch className="h-5 w-5 text-gray-400" />
+            </div>
           )}
         </div>
       </div>

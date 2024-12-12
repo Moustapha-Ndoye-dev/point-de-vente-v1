@@ -6,62 +6,92 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Pagination from '../components/Pagination';
-import { fetchAllSales, fetchDailyItemsSold, fetchMonthlyItemsSold } from '../data/sales';
+import { fetchAllSales, fetchDailyItemsSold, fetchMonthlyItemsSold, fetchDailySalesTotal, fetchMonthlySalesTotal, getSaleInfo } from '../data/sales';
 import { fetchCustomers } from '../data/clients';
 import { fetchProducts } from '../data/products';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 type TimeRange = 'today' | 'week' | 'month' | 'all';
 
 export function SalesReport() {
+  const { enterprise } = useEnterprise();
+  const enterpriseId = enterprise?.id;
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const { formatAmount } = useCurrency();
   const [sales, setSales] = useState<Sale[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [salesInfo, setSalesInfo] = useState<any[]>([]);
   const [totalItemsSold, setTotalItemsSold] = useState<number>(0);
   const [totalProductsInStock, setTotalProductsInStock] = useState<number>(0);
+  const [totalSales, setTotalSales] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(5); // Set initial items per page to 5
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
-      let salesFromDB: Sale[] = [];
-      let totalItemsSoldFromDB: number = 0;
-      switch (timeRange) {
-        case 'today':
-          salesFromDB = await fetchAllSales();
-          totalItemsSoldFromDB = await fetchDailyItemsSold();
-          break;
-        case 'month':
-          salesFromDB = await fetchAllSales();
-          totalItemsSoldFromDB = await fetchMonthlyItemsSold();
-          break;
-        default:
-          salesFromDB = await fetchAllSales();
-          totalItemsSoldFromDB = salesFromDB.reduce((sum, sale) => sum + sale.items.reduce((acc, item) => acc + item.quantity, 0), 0);
-          break;
+      if (!enterpriseId) {
+        console.error('ID entreprise manquant');
+        return;
       }
 
-      const customersFromDB = await fetchCustomers();
-      const productsFromDB = await fetchProducts();
+      try {
+        const [salesFromDB, customersFromDB, productsFromDB] = await Promise.all([
+          fetchAllSales(enterpriseId),
+          fetchCustomers(enterpriseId),
+          fetchProducts(enterpriseId)
+        ]);
 
-      console.log('Sales from DB:', salesFromDB);
-      console.log('Customers from DB:', customersFromDB);
-      console.log('Total items sold from DB:', totalItemsSoldFromDB);
-      console.log('Products from DB:', productsFromDB);
+        let totalItemsSoldFromDB = 0;
+        let totalSalesAmount = 0;
+        
+        if (salesFromDB.length > 0) {
+          switch (timeRange) {
+            case 'today':
+              totalItemsSoldFromDB = await fetchDailyItemsSold(enterpriseId);
+              totalSalesAmount = await fetchDailySalesTotal(enterpriseId);
+              break;
+            case 'month':
+              totalItemsSoldFromDB = await fetchMonthlyItemsSold(enterpriseId);
+              totalSalesAmount = await fetchMonthlySalesTotal(enterpriseId);
+              break;
+            default:
+              totalItemsSoldFromDB = salesFromDB.reduce((sum, sale) => 
+                sum + sale.items.reduce((acc, item) => acc + item.quantity, 0), 0);
+              totalSalesAmount = salesFromDB.reduce((sum, sale) => sum + sale.total, 0);
+          }
+        }
 
-      setSales(salesFromDB);
-      setCustomers(customersFromDB);
-      setTotalItemsSold(totalItemsSoldFromDB);
-      setTotalProductsInStock(productsFromDB.reduce((sum, product) => sum + product.stock, 0));
+        const totalInStock = productsFromDB.reduce((sum, product) => sum + (product.stock || 0), 0);
+
+        setSales(salesFromDB);
+        setTotalItemsSold(totalItemsSoldFromDB);
+        setTotalProductsInStock(totalInStock);
+        setTotalSales(totalSalesAmount);
+        setCustomers(customersFromDB);
+
+        // Fetch sale info for each sale
+        const salesInfoPromises = salesFromDB.map(sale => getSaleInfo(sale.id, enterpriseId));
+        const salesInfoResults = await Promise.all(salesInfoPromises);
+        setSalesInfo(salesInfoResults.filter(info => info !== null));
+
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      }
     };
+
     loadData();
-  }, [timeRange]);
+  }, [timeRange, enterpriseId]);
 
   const filteredSales = useMemo(() => {
+    if (!sales.length || !enterpriseId) return [];
+
     const now = new Date();
     return sales.filter(sale => {
-      const saleDate = new Date(sale.created_at);
+      const saleDate = new Date(sale.createdAt);
+      
+      if (sale.enterpriseId !== enterpriseId) return false;
+      
       const matchesTimeRange = (() => {
         switch (timeRange) {
           case 'today':
@@ -78,38 +108,50 @@ export function SalesReport() {
         }
       })();
 
-      // Filter by search term (e.g., customer name)
-      const matchesSearch = searchTerm.trim() === '' || 
-        customers.find(c => c.id === sale.customer_id)?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = !searchTerm.trim() || 
+        sale.customer?.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesTimeRange && matchesSearch;
+      const matchesCustomer = !searchTerm.trim() || 
+        customers.find(c => c.id === sale.customerId)?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesTimeRange && matchesSearch && matchesCustomer;
     });
-  }, [sales, timeRange, searchTerm, customers]);
+  }, [sales, timeRange, searchTerm, customers, enterpriseId]);
 
   const combinedSales = useMemo(() => {
-    const productMap = new Map<string, { name: string, quantity: number, unit_price: number, subtotal: number }>();
+    if (!enterpriseId || !salesInfo.length) {
+      console.log('Pas de ventes filtrées');
+      return [];
+    }
+    
+    const productMap = new Map<string, { 
+      name: string, 
+      quantity: number, 
+      unitPrice: number, 
+      subtotal: number 
+    }>();
 
-    filteredSales.forEach(sale => {
-      sale.items.forEach(item => {
-        if (item.product) {
-          if (productMap.has(item.product.id)) {
-            const existing = productMap.get(item.product.id)!;
-            existing.quantity += item.quantity;
-            existing.subtotal += item.subtotal;
-          } else {
-            productMap.set(item.product.id, {
-              name: item.product.name ?? 'Unknown Product',
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              subtotal: item.subtotal
-            });
-          }
+    salesInfo.forEach((info: { products: Array<{ name: string; quantity: number; unitPrice: number; total: number }> }) => {
+      info.products.forEach((product) => {
+        const productId = product.name; // Assuming name is unique for simplicity
+        if (productMap.has(productId)) {
+          const existing = productMap.get(productId)!;
+          existing.quantity += product.quantity;
+          existing.subtotal += product.total;
+        } else {
+          productMap.set(productId, {
+            name: product.name,
+            quantity: product.quantity,
+            unitPrice: product.unitPrice,
+            subtotal: product.total
+          });
         }
       });
     });
 
+    console.log('Résultat des ventes combinées:', Array.from(productMap.values()));
     return Array.from(productMap.values());
-  }, [filteredSales]);
+  }, [salesInfo, enterpriseId]);
 
   const totalPages = Math.ceil(combinedSales.length / itemsPerPage);
   const currentSales = combinedSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -129,7 +171,7 @@ export function SalesReport() {
     const tableRows = combinedSales.map(item => [
       item.name,
       item.quantity,
-      formatAmount(item.unit_price),
+      formatAmount(item.unitPrice),
       formatAmount(item.subtotal)
     ]);
 
@@ -195,7 +237,6 @@ export function SalesReport() {
       </div>
 
       <div className="flex mb-4">
-        <Search className="w-5 h-5 text-gray-400 mr-2" />
         <input
           type="text"
           placeholder="Rechercher par produit..."
@@ -211,7 +252,7 @@ export function SalesReport() {
             <div>
               <p className="text-sm font-medium text-gray-500">Total des ventes</p>
               <p className="mt-2 text-3xl font-bold text-gray-900">
-                {formatAmount(grandTotal)}  
+                {formatAmount(totalSales)}  
               </p>
             </div>
             <div className="bg-blue-50 p-3 rounded-xl">
@@ -306,7 +347,7 @@ export function SalesReport() {
                       {item.quantity}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatAmount(item.unit_price)}
+                      {formatAmount(item.unitPrice)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatAmount(item.subtotal)}

@@ -1,11 +1,14 @@
-import { PackageSearch, ShoppingCart, Tags, LayoutDashboard, Menu, X, BarChart2, Users, BanknoteIcon } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { PackageSearch, ShoppingCart, Tags, LayoutDashboard, Menu, X, BarChart2, Users, BanknoteIcon, LogOut } from 'lucide-react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { CurrencySelector } from './CurrencySelector';
+import { useEnterprise } from '../contexts/EnterpriseContext';
+import { logout } from '../data/auth';
 
 export function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { setEnterprise } = useEnterprise();
 
   const navItems = [
     {
@@ -60,18 +63,29 @@ export function Navbar() {
     </Link>
   );
 
+  const handleLogout = async () => {
+    await logout();
+    setEnterprise(null);
+    navigate('/login', { replace: true });
+  };
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       {/* Mobile header */}
-      <div className="lg:hidden flex items-center justify-between px-4 h-16">
-        <h1 className="text-xl font-bold text-gray-800">StockFlow</h1>
-        <div className="flex items-center gap-4">
-          <CurrencySelector />
+      <div className="lg:hidden flex items-center justify-between px-4 h-14">
+        <h1 className="text-lg font-bold text-gray-800">Sama Shop</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLogout}
+            className="p-2 text-gray-500 hover:text-gray-900"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+            className="p-2 text-gray-500 hover:text-gray-900"
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
@@ -88,23 +102,31 @@ export function Navbar() {
       {/* Desktop menu */}
       <div className="hidden lg:block">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-14">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-gray-800">StockFlow</h1>
+                <h1 className="text-lg font-bold text-gray-800">Sama Shop</h1>
               </div>
-              <div className="ml-6 flex items-center space-x-4">
+              <div className="ml-6 flex items-center space-x-3">
                 {navItems.map((item) => (
                   <NavLink key={item.to} {...item} />
                 ))}
               </div>
             </div>
-            <div className="flex items-center">
-              <CurrencySelector />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleLogout}
+                className="flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md"
+              >
+                <LogOut className="w-4 h-4 mr-1.5" />
+                Déconnexion
+              </button>
             </div>
           </div>
         </div>
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

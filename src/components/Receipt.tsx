@@ -23,7 +23,7 @@ export function Receipt({ sale, onClose }: ReceiptProps) {
         <div className="space-y-4">
           <div>
             <h4 className="text-lg font-medium text-gray-900">Détails de la vente</h4>
-            <p className="text-sm text-gray-700">Date: {new Date(sale.created_at).toLocaleString()}</p>
+            <p className="text-sm text-gray-700">Date: {new Date(sale.createdAt).toLocaleString()}</p>
           </div>
           <div>
             <h4 className="text-lg font-medium text-gray-900">Articles</h4>
@@ -39,10 +39,10 @@ export function Receipt({ sale, onClose }: ReceiptProps) {
               <tbody>
                 {sale.items && sale.items.length > 0 ? (
                   sale.items.map(item => (
-                    <tr key={item.product_id} className="border-t">
-                      <td className="px-4 py-2">{item.product?.name || `Produit ID: ${item.product_id}`}</td>
+                    <tr key={item.productId} className="border-t">
+                      <td className="px-4 py-2">{item.product?.name || `Produit ID: ${item.productId}`}</td>
                       <td className="px-4 py-2 text-right">{item.quantity}</td>
-                      <td className="px-4 py-2 text-right">{formatAmount(item.unit_price)}</td>
+                      <td className="px-4 py-2 text-right">{formatAmount(item.unitPrice)}</td>
                       <td className="px-4 py-2 text-right">{formatAmount(item.subtotal)}</td>
                     </tr>
                   ))
@@ -64,7 +64,7 @@ export function Receipt({ sale, onClose }: ReceiptProps) {
           </div>
           <div className="flex justify-between text-sm text-gray-700">
             <span>Monnaie</span>
-            <span>{sale.payment_method === 'debt' ? formatAmount(0) : formatAmount(sale.remaining_amount)}</span>
+            <span>{sale.paymentMethod === 'debt' ? formatAmount(0) : formatAmount(sale.remaining_amount)}</span>
           </div>
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600 print:hidden">Merci à bientôt!</p> {/* Ajout de print:hidden */}
