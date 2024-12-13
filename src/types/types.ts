@@ -52,7 +52,7 @@ export interface Sale {
   total: number;
   paid_amount: number;
   remaining_amount: number;
-  createdAt: string;
+  created_at: string;
   date: string;
   paymentMethod: 'cash' | 'card' | 'debt';
   status: 'pending' | 'completed' | 'cancelled';

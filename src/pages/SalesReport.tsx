@@ -17,7 +17,7 @@ export function SalesReport() {
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const { formatAmount } = useCurrency();
   const [salesInfo, setSalesInfo] = useState<any[]>([]);
-  const [totalItemsSold] = useState<number>(0);
+  const [totalItemsSold, setTotalItemsSold] = useState<number>(0);
   const [totalProductsInStock, setTotalProductsInStock] = useState<number>(0);
   const [totalSales, setTotalSales] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -43,15 +43,18 @@ export function SalesReport() {
         if (periodicSalesInfo) {
           setTotalSales(periodicSalesInfo.saleTotal);
           setSalesInfo([periodicSalesInfo]);
+          setTotalItemsSold(periodicSalesInfo.totalItemsSold);
         } else {
           setTotalSales(0);
           setSalesInfo([]);
+          setTotalItemsSold(0);
         }
 
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
         setTotalSales(0);
         setSalesInfo([]);
+        setTotalItemsSold(0);
       }
     };
 
@@ -359,6 +362,13 @@ export function SalesReport() {
             />
           </div>
         )}
+      </div>
+
+      <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-gray-500">Grand Total</span>
+          <span className="text-lg font-bold text-gray-900">{formatAmount(grandTotal)}</span>
+        </div>
       </div>
     </div>
   );
