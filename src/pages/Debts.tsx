@@ -1,6 +1,6 @@
 // Debts.tsx
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState , useEffect, useCallback } from 'react';
 import { Search, DollarSign, UserRound, X } from 'lucide-react';
 import { Debt, Payment } from '../types/types';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -8,6 +8,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { fetchDebts, markDebtAsPaid, fetchCustomers } from '../data/debts';
 import { usePagination } from '../hooks/usePagination';
 import { useEnterprise } from '../contexts/EnterpriseContext';
+import Pagination from '../components/Pagination';
 
 export function Debts() {
   const { enterprise } = useEnterprise();
@@ -28,12 +29,13 @@ export function Debts() {
   const [notifiedDebts, setNotifiedDebts] = useState<string[]>([]);
 
   const {
+    currentItems: currentDebts,
     currentPage,
-    itemsPerPage,
     totalPages,
-    currentItems,
-    goToPage
-  } = usePagination(debts, 10);
+    itemsPerPage,
+    goToPage,
+    changeItemsPerPage
+  } = usePagination(debts, 10); // Default items per page
 
   const loadData = useCallback(async () => {
     if (!enterpriseId) return;
@@ -164,19 +166,8 @@ export function Debts() {
     setShowPaymentModal(true);
   }, [debts, getRemainingAmount]);
 
-  const stats = useMemo(() => {
-    const total = debts.reduce((sum, debt) => sum + debt.amount, 0);
-    const settled = debts.filter(debt => debt.settled).reduce((sum, debt) => sum + debt.amount, 0);
-    const pending = total - settled;
-    const overdue = debts
-      .filter(debt => !debt.settled && debt.dueDate && new Date(debt.dueDate) < new Date())
-      .reduce((sum, debt) => sum + debt.amount, 0);
-
-    return { total, settled, pending, overdue };
-  }, [debts]);
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="p-4 sm:p-6">
       {showPaymentModal && selectedDebtId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -215,66 +206,45 @@ export function Debts() {
 
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des dettes</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-600">Total des dettes</p>
-          <p className="text-2xl font-bold text-gray-900">{formatAmount(stats.total)}</p>
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Rechercher par client..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); goToPage(1); }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-600">Dettes en cours</p>
-          <p className="text-2xl font-bold text-blue-600">{formatAmount(stats.pending)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-600">Dettes réglées</p>
-          <p className="text-2xl font-bold text-green-600">{formatAmount(stats.settled)}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <p className="text-sm font-medium text-gray-600">Dettes en retard</p>
-          <p className="text-2xl font-bold text-red-600">{formatAmount(stats.overdue)}</p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <select
+            value={filterType}
+            onChange={(e) => { setFilterType(e.target.value as 'all' | 'pending' | 'settled' | 'overdue'); goToPage(1); }}
+            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="pending">En cours</option>
+            <option value="settled">Réglées</option>
+            <option value="overdue">En retard</option>
+          </select>
+          <select
+            value={timeRange}
+            onChange={(e) => { setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month'); goToPage(1); }}
+            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">Toute période</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="week">Cette semaine</option>
+            <option value="month">Ce mois</option>
+          </select>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Rechercher par client..."
-                  value={searchTerm}
-                  onChange={(e) => { setSearchTerm(e.target.value); goToPage(1); }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <select
-                value={filterType}
-                onChange={(e) => { setFilterType(e.target.value as 'all' | 'pending' | 'settled' | 'overdue'); goToPage(1); }}
-                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="pending">En cours</option>
-                <option value="settled">Réglées</option>
-                <option value="overdue">En retard</option>
-              </select>
-              <select
-                value={timeRange}
-                onChange={(e) => { setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month'); goToPage(1); }}
-                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="all">Toute période</option>
-                <option value="today">Aujourd'hui</option>
-                <option value="week">Cette semaine</option>
-                <option value="month">Ce mois</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <div className="hidden md:block">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -302,7 +272,7 @@ export function Debts() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentItems.map((debt) => {
+              {currentDebts.map((debt) => {
                 const paidAmount = getPaidAmount(debt.id);
                 const remainingAmount = getRemainingAmount(debt);
                 const customerName = customers[debt.customerId];
@@ -375,34 +345,104 @@ export function Debts() {
               })}
             </tbody>
           </table>
-          {currentItems.length === 0 && (
+        </div>
+
+        {/* Vue mobile en cartes */}
+        <div className="md:hidden">
+          {currentDebts.map((debt) => {
+            const paidAmount = getPaidAmount(debt.id);
+            const remainingAmount = getRemainingAmount(debt);
+            const customerName = customers[debt.customerId];
+            const dueDateFormatted = debt.dueDate
+              ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })
+              : 'N/A';
+
+            return (
+              <div key={debt.id} className="border-b border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <UserRound className="w-5 h-5 text-gray-400 mr-2" />
+                    <span className="text-sm font-medium text-gray-900">
+                      {customerName || 'Client inconnu'}
+                    </span>
+                  </div>
+                  {debt.settled ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Réglée
+                    </span>
+                  ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      En retard
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      En cours
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div>
+                    <span className="text-gray-500">Montant total:</span>
+                    <span className="block font-medium text-gray-900">
+                      {formatAmount(debt.amount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Montant payé:</span>
+                    <span className="block font-medium text-green-600">
+                      {formatAmount(paidAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Reste à payer:</span>
+                    <span className="block font-medium text-red-600">
+                      {formatAmount(remainingAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Échéance:</span>
+                    <span className="block font-medium text-gray-900">
+                      {dueDateFormatted}
+                    </span>
+                  </div>
+                </div>
+
+                {!debt.settled && remainingAmount > 0 && (
+                  <button
+                    onClick={() => handlePayment(debt.id)}
+                    className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    <DollarSign className="w-4 h-4 mr-1" />
+                    Payer
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {currentDebts.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               Aucune dette trouvée
             </div>
           )}
         </div>
-
-        {/* Pagination Controls */}
-        <div className="flex justify-center items-center mt-4 space-x-2">
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className={`px-4 py-2 rounded-md ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            Précédent
-          </button>
-          <span className="text-sm text-gray-700">
-            Page {currentPage} sur {totalPages}
-          </span>
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className={`px-4 py-2 rounded-md ${currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            Suivant
-          </button>
-        </div>
       </div>
+
+      {debts.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={changeItemsPerPage}
+          itemsPerPageOptions={[5, 10, 20]}
+        />
+      )}
     </div>
   );
 }

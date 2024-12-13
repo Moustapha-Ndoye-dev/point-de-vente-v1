@@ -70,24 +70,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
           Connexion Entreprise
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-6 sm:mt-8 sm:mx-auto w-full sm:max-w-md">
+        <div className="bg-white py-6 sm:py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {location.search.includes('registered=true') && (
-            <div className="mb-4 bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded">
+            <div className="mb-4 bg-green-50 border border-green-400 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
               Compte créé avec succès ! Vous pouvez maintenant vous connecter.
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <div className="bg-red-50 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
                 {error}
               </div>
             )}
@@ -100,7 +100,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -114,7 +114,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -123,7 +123,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
@@ -131,12 +131,12 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="mt-6 text-center">
-        <span className="text-sm text-gray-600">
+      <div className="mt-4 sm:mt-6 text-center">
+        <span className="text-sm sm:text-base text-gray-600">
           Pas encore de compte ? {' '}
           <Link 
             to="/register" 
-            className="font-medium text-blue-600 hover:text-blue-500"
+            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             Inscrivez-vous maintenant
           </Link>

@@ -230,11 +230,11 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">
             Evolution des ventes
           </h3>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <XAxis dataKey="label" />

@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-interface Enterprise {
+interface Enterprise {  
   id: string;
   name: string;
   email: string;
@@ -13,13 +13,18 @@ interface EnterpriseContextType {
   enterprise: Enterprise | null;
   setEnterprise: (enterprise: Enterprise | null) => void;
   loading: boolean;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const EnterpriseContext = createContext<EnterpriseContextType | undefined>(undefined);
+export const EnterpriseContext = createContext<EnterpriseContextType | undefined>(undefined);
 
-export function EnterpriseProvider({ children }: { children: ReactNode }) {
+interface EnterpriseProviderProps {
+  children: React.ReactNode;
+}
+
+export function EnterpriseProvider({ children }: EnterpriseProviderProps) {
   const [enterprise, setEnterprise] = useState<Enterprise | null>(null);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (enterprise) {
@@ -30,7 +35,7 @@ export function EnterpriseProvider({ children }: { children: ReactNode }) {
   }, [enterprise]);
 
   return (
-    <EnterpriseContext.Provider value={{ enterprise, setEnterprise, loading }}>
+    <EnterpriseContext.Provider value={{ enterprise, setEnterprise, loading, setLoading }}>
       {children}
     </EnterpriseContext.Provider>
   );

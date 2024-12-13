@@ -90,8 +90,16 @@ export function Navbar() {
         </div>
       </div>
 
+      {/* Background overlay */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out ${
+          isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMenuOpen(false)}
+      ></div>
+
       {/* Mobile menu */}
-      <div className={`lg:hidden ${isMenuOpen ? 'block' : 'hidden'} border-t border-gray-100`}>
+      <div className={`fixed inset-y-0 left-0 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out bg-white shadow-lg lg:hidden z-40`}>
         <div className="px-2 pt-2 pb-3 space-y-1">
           {navItems.map((item) => (
             <NavLink key={item.to} {...item} />

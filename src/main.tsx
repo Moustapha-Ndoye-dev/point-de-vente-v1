@@ -6,15 +6,18 @@ import { EnterpriseProvider } from './contexts/EnterpriseContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './i18n/config';
+import { LoadingProvider } from './contexts/LoadingContext';
 
 createRoot(document.getElementById('app')!).render(
   <StrictMode>
-    <EnterpriseProvider>
-      <LanguageProvider>
-        <NotificationProvider>
-          <App />
-        </NotificationProvider>
-      </LanguageProvider>
-    </EnterpriseProvider>
+    <LoadingProvider>
+      <EnterpriseProvider>
+        <LanguageProvider>
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
+        </LanguageProvider>
+      </EnterpriseProvider>
+    </LoadingProvider>
   </StrictMode>,
 );

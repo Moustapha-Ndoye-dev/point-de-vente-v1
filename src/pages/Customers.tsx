@@ -118,8 +118,8 @@ export function Customers() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Clients</h2>
         <button
           onClick={() => {
@@ -133,96 +133,94 @@ export function Customers() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher un client..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Rechercher un client..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nom
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Téléphone
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nom
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Téléphone
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {currentCustomers.map((customer) => (
+              <tr key={customer.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {customer.name}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center text-sm text-gray-500">
+                    {customer.phone ? (
+                      <>
+                        <Phone className="h-4 w-4 mr-1" />
+                        {customer.phone}
+                      </>
+                    ) : (
+                      <span className="text-gray-400">Non renseigné</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => {
+                      setEditingCustomer(customer);
+                      setShowForm(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(customer.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentCustomers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {customer.name}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-500">
-                      {customer.phone ? (
-                        <>
-                          <Phone className="h-4 w-4 mr-1" />
-                          {customer.phone}
-                        </>
-                      ) : (
-                        <span className="text-gray-400">Non renseigné</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setEditingCustomer(customer);
-                        setShowForm(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(customer.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {customers.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Aucun client trouvé
-            </div>
-          )}
-        </div>
-
-        {customers.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-200">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={goToPage}
-              itemsPerPage={itemsPerPage}
-              onItemsPerPageChange={changeItemsPerPage}
-              itemsPerPageOptions={[10, 20, 50, 100]}
-            />
+            ))}
+          </tbody>
+        </table>
+        {customers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            Aucun client trouvé
           </div>
         )}
       </div>
+
+      {customers.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-200">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={changeItemsPerPage}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+          />
+        </div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -260,28 +260,52 @@ export const deleteDebt = async (id: string): Promise<boolean> => {
 
 // Marquer une dette comme payée
 export const markDebtAsPaid = async (id: string): Promise<Debt | null> => {
-    const { data, error } = await supabase
-        .from('debt')
-        .update({ settled: true, settled_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
+    try {
+        // D'abord, récupérer la dette pour obtenir le sale_id
+        const { data: debtData, error: debtError } = await supabase
+            .from('debt')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    if (error) {
+        if (debtError) throw debtError;
+
+        // Mettre à jour la dette
+        const { data, error } = await supabase
+            .from('debt')
+            .update({ 
+                settled: true, 
+                settled_at: new Date().toISOString() 
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Mettre à jour le statut de la vente
+        const { error: saleError } = await supabase
+            .from('sale')
+            .update({ status: 'completed' })
+            .eq('id', debtData.sale_id);
+
+        if (saleError) throw saleError;
+
+        return {
+            id: data.id,
+            saleId: data.sale_id,
+            customerId: data.customer_id,
+            amount: parseFloat(data.amount),
+            settled: data.settled,
+            dueDate: data.due_date,
+            createdAt: data.created_at,
+            settledAt: data.settled_at,
+        } as unknown as Debt;
+
+    } catch (error) {
         console.error('Erreur lors du paiement de la dette:', error);
         return null;
     }
-
-    return {
-        id: data.id,
-        saleId: data.sale_id,
-        customerId: data.customer_id,
-        amount: parseFloat(data.amount),
-        settled: data.settled,
-        dueDate: data.due_date,
-        createdAt: data.created_at,
-        settledAt: data.settled_at,
-    } as unknown as Debt;
 };
 
 // Récupérer le nom d'un client par son ID

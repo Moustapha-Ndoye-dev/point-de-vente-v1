@@ -5,8 +5,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Pagination from '../components/Pagination';
-import { fetchAllSales, fetchDailyItemsSold, fetchMonthlyItemsSold, fetchDailySalesTotal, fetchMonthlySalesTotal, getSaleInfo } from '../data/sales';
-import { fetchCustomers } from '../data/clients';
+import { getPeriodicSaleInfo } from '../data/sales';
 import { fetchProducts } from '../data/products';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 
@@ -18,7 +17,7 @@ export function SalesReport() {
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const { formatAmount } = useCurrency();
   const [salesInfo, setSalesInfo] = useState<any[]>([]);
-  const [totalItemsSold, setTotalItemsSold] = useState<number>(0);
+  const [totalItemsSold] = useState<number>(0);
   const [totalProductsInStock, setTotalProductsInStock] = useState<number>(0);
   const [totalSales, setTotalSales] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -33,45 +32,26 @@ export function SalesReport() {
       }
 
       try {
-        const [salesFromDB, , productsFromDB] = await Promise.all([
-          fetchAllSales(enterpriseId),
-          fetchCustomers(enterpriseId),
-          fetchProducts(enterpriseId)
+        const [productsFromDB, periodicSalesInfo] = await Promise.all([
+          fetchProducts(enterpriseId),
+          getPeriodicSaleInfo(enterpriseId, timeRange)
         ]);
 
-        let totalItemsSoldFromDB = 0;
-        let totalSalesAmount = 0;
-        
-        if (salesFromDB.length > 0) {
-          switch (timeRange) {
-            case 'today':
-              totalItemsSoldFromDB = await fetchDailyItemsSold(enterpriseId);
-              totalSalesAmount = await fetchDailySalesTotal(enterpriseId);
-              break;
-            case 'month':
-              totalItemsSoldFromDB = await fetchMonthlyItemsSold(enterpriseId);
-              totalSalesAmount = await fetchMonthlySalesTotal(enterpriseId);
-              break;
-            default:
-              totalItemsSoldFromDB = salesFromDB.reduce((sum, sale) => 
-                sum + sale.items.reduce((acc, item) => acc + item.quantity, 0), 0);
-              totalSalesAmount = salesFromDB.reduce((sum, sale) => sum + sale.total, 0);
-          }
-        }
-
         const totalInStock = productsFromDB.reduce((sum, product) => sum + (product.stock || 0), 0);
-
-        setTotalItemsSold(totalItemsSoldFromDB);
         setTotalProductsInStock(totalInStock);
-        setTotalSales(totalSalesAmount);
 
-        // Fetch sale info for each sale
-        const salesInfoPromises = salesFromDB.map(sale => getSaleInfo(sale.id, enterpriseId));
-        const salesInfoResults = await Promise.all(salesInfoPromises);
-        setSalesInfo(salesInfoResults.filter(info => info !== null));
+        if (periodicSalesInfo) {
+          setTotalSales(periodicSalesInfo.saleTotal);
+          setSalesInfo([periodicSalesInfo]);
+        } else {
+          setTotalSales(0);
+          setSalesInfo([]);
+        }
 
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
+        setTotalSales(0);
+        setSalesInfo([]);
       }
     };
 
@@ -164,7 +144,7 @@ export function SalesReport() {
                timeRange === 'week' ? '7 derniers jours' :
                timeRange === 'month' ? 'Ce mois' : 'Toute période'}
             </Menu.Button>
-            <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg">
+            <Menu.Items className="absolute right-0 z-50 mt-2 w-full sm:w-56 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg max-h-[80vh] overflow-y-auto">
               <div className="py-1">
                 {['today', 'week', 'month', 'all'].map((range) => (
                   <Menu.Item key={range}>
@@ -173,7 +153,7 @@ export function SalesReport() {
                         onClick={() => setTimeRange(range as TimeRange)}
                         className={`${
                           active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                        } block px-4 py-2 text-sm w-full text-left`}
+                        } block px-4 py-3 sm:py-2 text-base sm:text-sm w-full text-left`}
                       >
                         {range === 'today' ? 'Aujourd\'hui' :
                          range === 'week' ? '7 derniers jours' :
@@ -279,7 +259,8 @@ export function SalesReport() {
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-100">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          {/* Table pour desktop */}
+          <table className="hidden md:table min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -321,18 +302,49 @@ export function SalesReport() {
                   </td>
                 </tr>
               )}
-              {currentSales.length > 0 && (
-                <tr>
-                  <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                    Grand Total:
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                    {formatAmount(grandTotal)}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+
+          {/* Vue mobile en cards */}
+          <div className="md:hidden">
+            {currentSales.length > 0 ? (
+              currentSales.map((item) => (
+                <div key={item.name} className="border-b border-gray-200 p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium text-gray-900">{item.name}</h3>
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatAmount(item.subtotal)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
+                    <div>
+                      <span className="font-medium">Quantité:</span>
+                      <span className="ml-2">{item.quantity}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Prix unitaire:</span>
+                      <span className="ml-2">{formatAmount(item.unitPrice)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-sm text-gray-500 text-center">
+                Aucune vente disponible pour la période sélectionnée.
+              </div>
+            )}
+
+            {currentSales.length > 0 && (
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-900">Grand Total:</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {formatAmount(grandTotal)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
         {totalPages > 1 && (
@@ -343,7 +355,7 @@ export function SalesReport() {
               onPageChange={setCurrentPage}
               itemsPerPage={itemsPerPage}
               onItemsPerPageChange={setItemsPerPage}
-              itemsPerPageOptions={[5, 10, 20, 50]} // Add 5 to the options
+              itemsPerPageOptions={[5, 10, 20, 50]}
             />
           </div>
         )}

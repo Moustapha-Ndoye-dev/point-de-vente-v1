@@ -76,8 +76,8 @@ export function Categories() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Catégories</h2>
         <button
           onClick={() => {
@@ -113,7 +113,7 @@ export function Categories() {
         </div>
       )}
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

@@ -351,6 +351,7 @@ export const fetchDailySalesTotal = async (enterpriseId: string): Promise<number
     .from('sale')
     .select('total')
     .eq('enterprise_id', enterpriseId)
+    .eq('status', 'completed')
     .gte('created_at', today)
     .lt('created_at', today + 'T23:59:59.999Z');
 
@@ -367,7 +368,8 @@ export const fetchMonthlySalesTotal = async (enterpriseId: string): Promise<numb
     .from('sale')
     .select('total')
     .eq('enterprise_id', enterpriseId)
-    .gte('created_at', new Date(new Date().setDate(1)).toISOString()); // Récupérer les ventes du mois en cours
+    .eq('status', 'completed')
+    .gte('created_at', new Date(new Date().setDate(1)).toISOString());
 
   if (error) {
     console.error('Erreur lors de la récupération du total des ventes du mois:', error);
@@ -409,6 +411,108 @@ export const getSaleInfo = async (saleId: string, enterpriseId: string): Promise
     };
   } catch (error) {
     console.error('Erreur lors de la récupération des informations de la vente:', error);
+    return null;
+  }
+};
+
+export const getPeriodicSaleInfo = async (
+  enterpriseId: string,
+  timeRange: 'today' | 'week' | 'month' | 'all'
+): Promise<{
+  products: Array<{
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  saleTotal: number;
+  totalItemsSold: number;
+} | null> => {
+  try {
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (timeRange) {
+      case 'today':
+        startDate = new Date(now.setHours(0, 0, 0, 0));
+        break;
+      case 'week':
+        startDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case 'month':
+        startDate = new Date(now.setDate(1));
+        break;
+      default:
+        startDate = new Date(0);
+    }
+
+    const { data: sales, error } = await supabase
+      .from('sale')
+      .select(`
+        id,
+        total,
+        created_at,
+        items:sale_item(
+          quantity,
+          unitPrice,
+          subtotal,
+          product:products(
+            name
+          )
+        )
+      `)
+      .eq('enterprise_id', enterpriseId)
+      .eq('status', 'completed')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', new Date().toISOString());
+
+    if (error) {
+      console.error('Erreur lors de la récupération des ventes:', error);
+      return null;
+    }
+
+    const productMap = new Map<string, {
+      name: string;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>();
+
+    let totalItemsSold = 0;
+    let saleTotal = 0;
+
+    sales.forEach(sale => {
+      saleTotal += sale.total;
+
+      sale.items.forEach((item: any) => {
+        const productName = item.product?.name || 'Produit inconnu';
+        totalItemsSold += item.quantity;
+        
+        if (productMap.has(productName)) {
+          const existing = productMap.get(productName)!;
+          existing.quantity += item.quantity;
+          existing.total += item.subtotal;
+        } else {
+          productMap.set(productName, {
+            name: productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.subtotal
+          });
+        }
+      });
+    });
+
+    const products = Array.from(productMap.values());
+
+    return {
+      products,
+      saleTotal,
+      totalItemsSold
+    };
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des informations de vente périodiques:', error);
     return null;
   }
 };

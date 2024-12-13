@@ -127,3 +127,51 @@ export const logout = async (): Promise<{ success: boolean; error?: string }> =>
     };
   }
 };
+
+export const checkSession = async (): Promise<{
+  isValid: boolean;
+  enterprise: Enterprise | null;
+}> => {
+  const token = localStorage.getItem('token');
+  const savedEnterprise = localStorage.getItem('enterprise');
+
+  if (!token || !savedEnterprise) {
+    return { isValid: false, enterprise: null };
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const enterpriseData = JSON.parse(savedEnterprise);
+
+    // Vérification plus stricte de la session
+    if (payload.sub !== enterpriseData.id || payload.exp! * 1000 < Date.now()) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('enterprise');
+      return { isValid: false, enterprise: null };
+    }
+
+    // Vérification côté serveur
+    const { data: enterprise, error } = await supabase
+      .from('enterprise')
+      .select('*')
+      .eq('id', payload.sub)
+      .single();
+
+    if (error || !enterprise) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('enterprise');
+      return { isValid: false, enterprise: null };
+    }
+
+    // Rediriger uniquement si on est sur login/register
+    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+      window.location.href = '/dashboard';
+    }
+
+    return { isValid: true, enterprise: enterpriseData };
+  } catch (error) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('enterprise');
+    return { isValid: false, enterprise: null };
+  }
+};

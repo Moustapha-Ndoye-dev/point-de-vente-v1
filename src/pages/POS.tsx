@@ -10,6 +10,12 @@ import { fetchCategories } from '../data/categories';
 import { Receipt } from '../components/Receipt';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 
+function getImageUrl(imageUrl: string | null) {
+  if (!imageUrl) return '/placeholder-product.png';
+  if (imageUrl.startsWith('http')) return imageUrl;
+  return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${imageUrl}`;
+}
+
 export function POS() {
   const { enterprise, loading } = useEnterprise();
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,6 +33,7 @@ export function POS() {
   const { formatAmount } = useCurrency();
   const { addNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(true);
+  const [isCartModalOpen, setIsCartModalOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -187,12 +194,6 @@ export function POS() {
   };
 
   const ProductCard = ({ product }: { product: Product }) => {
-    const getImageUrl = (imageUrl: string | null) => {
-      if (!imageUrl) return '/placeholder-product.png';
-      if (imageUrl.startsWith('http')) return imageUrl;
-      return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${imageUrl}`;
-    };
-
     return (
       <div 
         className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
@@ -232,58 +233,177 @@ export function POS() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-r from-indigo-500 to-purple-600">
-      {/* Liste des produits */}
-      <div className="flex-1 p-6 overflow-auto bg-white shadow-lg rounded-l-lg">
-        <div className="mb-6">
-          <div className="flex space-x-4 mb-4">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
+      {/* Section produits */}
+      <div className="w-full md:w-2/3 h-full flex flex-col">
+        {/* Barre de recherche et filtres */}
+        <div className="p-4 bg-white border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Rechercher un produit..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="relative w-48">
-              <select
-                value={selectedCategory || ''}
-                onChange={(e) => setSelectedCategory(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-              >
-                <option value="">Toutes les catégories</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedCategory || ''}
+              onChange={(e) => setSelectedCategory(e.target.value || null)}
+              className="w-full sm:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Toutes les catégories</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+
+        {/* Grille de produits avec scroll */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Panier */}
-      <div className="w-96 bg-white border-l border-gray-200 flex flex-col shadow-lg rounded-r-lg">
-        <div className="p-6 border-b border-gray-200 bg-indigo-50">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-indigo-700">Panier</h2>
-            <ShoppingCart className="h-6 w-6 text-indigo-600" />
+      {/* Icône de panier pour mobile */}
+      <div className="fixed bottom-4 right-4 md:hidden">
+        <button
+          onClick={() => setIsCartModalOpen(true)}
+          className="relative bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none"
+        >
+          <ShoppingCart className="h-6 w-6" />
+          {cart.length > 0 && (
+            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+              {cart.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Modal du panier pour mobile */}
+      {isCartModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-semibold text-indigo-700">Panier</h3>
+              <button
+                onClick={() => setIsCartModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            {/* Contenu du panier */}
+            <div className="flex-1 overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full p-4 text-gray-500">
+                  <ShoppingCart className="h-12 w-12 mb-2 text-gray-300" />
+                  <p className="text-sm">Votre panier est vide</p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-2">
+                  {cart.map((item) => (
+                    <div key={item.product.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                      <div className="w-12 h-12 bg-white rounded-md flex items-center justify-center">
+                        {item.product.imageUrl ? (
+                          <img
+                            src={getImageUrl(item.product.imageUrl)}
+                            alt={item.product.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        ) : (
+                          <PackageSearch className="h-6 w-6 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-800 truncate">
+                          {item.product.name}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {formatAmount(item.product.price)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateQuantity(item.product.id, -1)}
+                          className="p-1 text-gray-500 hover:text-indigo-600"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-8 text-center text-sm">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.product.id, 1)}
+                          className="p-1 text-gray-500 hover:text-indigo-600"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => removeFromCart(item.product.id)}
+                          className="p-1 text-gray-400 hover:text-red-500"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Pied du panier avec total et bouton de paiement */}
+            <div className="p-4 border-t border-gray-200 bg-white">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-gray-700">Total</span>
+                <span className="text-xl font-bold text-indigo-600">
+                  {formatAmount(cartTotal)}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setPaymentAmount(cartTotal);
+                  setShowPaymentModal(true);
+                  setIsCartModalOpen(false); // Fermer le modal du panier
+                }}
+                disabled={cart.length === 0}
+                className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 
+                         disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors
+                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Procéder au paiement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Panier pour les écrans de bureau */}
+      <div className="hidden md:block md:w-1/3 bg-white border-l border-gray-200 flex flex-col md:h-full">
+        {/* En-tête du panier */}
+        <div className="p-4 bg-indigo-50 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-lg font-semibold text-indigo-700">Panier</h2>
+            </div>
+            <span className="text-sm font-medium text-gray-600">
+              {cart.length} article{cart.length !== 1 ? 's' : ''}
+            </span>
           </div>
           {selectedCustomer && (
-            <div className="flex items-center gap-2 text-sm text-gray-700 mb-2">
-              <UserRound className="h-5 w-5" />
-              <span>{selectedCustomer.name}</span>
+            <div className="mt-2 flex items-center gap-2 bg-white p-2 rounded-lg">
+              <UserRound className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-gray-700">{selectedCustomer.name}</span>
               <button
                 onClick={() => setSelectedCustomer(null)}
-                className="ml-auto text-red-600 hover:text-red-700"
+                className="ml-auto text-gray-400 hover:text-red-500"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -291,49 +411,70 @@ export function POS() {
           )}
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        {/* Liste des articles du panier avec scroll */}
+        <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <ShoppingCart className="h-12 w-12 mb-4" />
-              <p>Aucun produit dans le panier</p>
+            <div className="flex flex-col items-center justify-center h-full p-4 text-gray-500">
+              <ShoppingCart className="h-12 w-12 mb-2 text-gray-300" />
+              <p className="text-sm">Votre panier est vide</p>
             </div>
           ) : (
-            cart.map((item) => (
-              <div key={item.product.id} className="flex items-center mb-4">
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-900">{item.product.name}</h3>
-                  <p className="text-sm text-gray-500">{formatAmount(item.product.price)}</p>
+            <div className="p-4 space-y-2">
+              {cart.map((item) => (
+                <div key={item.product.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                  <div className="w-12 h-12 bg-white rounded-md flex items-center justify-center">
+                    {item.product.imageUrl ? (
+                      <img
+                        src={getImageUrl(item.product.imageUrl)}
+                        alt={item.product.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ) : (
+                      <PackageSearch className="h-6 w-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-gray-800 truncate">
+                      {item.product.name}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {formatAmount(item.product.price)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateQuantity(item.product.id, -1)}
+                      className="p-1 text-gray-500 hover:text-indigo-600"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-8 text-center text-sm">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.product.id, 1)}
+                      className="p-1 text-gray-500 hover:text-indigo-600"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => removeFromCart(item.product.id)}
+                      className="p-1 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateQuantity(item.product.id, -1)}
-                    className="p-1 text-gray-400 hover:text-gray-500 focus:outline-none"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.product.id, 1)}
-                    className="p-1 text-gray-400 hover:text-gray-500 focus:outline-none"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => removeFromCart(item.product.id)}
-                    className="p-1 text-red-400 hover:text-red-500 focus:outline-none"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 bg-indigo-50">
-          <div className="flex justify-between mb-4">
-            <span className="text-lg font-semibold text-indigo-700">Total</span>
-            <span className="text-lg font-bold text-indigo-600">{formatAmount(cartTotal)}</span>
+        {/* Pied du panier avec total et bouton de paiement */}
+        <div className="p-4 border-t border-gray-200 bg-white">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-700">Total</span>
+            <span className="text-xl font-bold text-indigo-600">
+              {formatAmount(cartTotal)}
+            </span>
           </div>
           <button
             onClick={() => {
@@ -341,14 +482,16 @@ export function POS() {
               setShowPaymentModal(true);
             }}
             disabled={cart.length === 0}
-            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 
+                     disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors
+                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Procéder au paiement
           </button>
         </div>
       </div>
 
-      {/* Modal de paiement */}
+      {/* Modals existants */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
@@ -388,7 +531,7 @@ export function POS() {
                     } transition-colors`}
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
-                    Carte
+                    e-money
                   </button>
                   <button
                     onClick={() => { setPaymentMethod('debt'); }}
@@ -481,7 +624,6 @@ export function POS() {
         </div>
       )}
 
-      {/* Modal de ticket de caisse */}
       {completedSale && (
         <Receipt
           sale={completedSale}
