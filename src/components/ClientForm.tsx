@@ -16,7 +16,9 @@ export function ClientForm({ onSubmit, initialCustomer }: ClientFormProps) {
     e.preventDefault();
     const data = {
       ...formData,
-      createdAt: new Date().toISOString(), // Changed created_at to createdAt
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      enterpriseId: 'votreEnterpriseIdIci'
     };
     onSubmit(data);
   };

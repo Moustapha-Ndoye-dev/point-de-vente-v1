@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Debt } from '../types/types';
+
 import { fetchDebts } from '../data/debts';
 import { fetchCustomers } from '../data/clients';
 import { useEnterprise } from '../contexts/EnterpriseContext';

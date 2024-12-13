@@ -11,7 +11,7 @@ interface ProductFormProps {
   onClose?: () => void;
 }
 
-export function ProductForm({ onSubmit, initialProduct, categories, onClose }: ProductFormProps) {
+export function ProductForm({ onSubmit, initialProduct, categories }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: initialProduct?.name || '',
     price: initialProduct?.price?.toString() || '',

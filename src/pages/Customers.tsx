@@ -15,7 +15,6 @@ export function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { addNotification } = useNotifications();
-  const [isLoading, setIsLoading] = useState(true);
 
   const {
     currentItems: currentCustomers,
@@ -37,8 +36,6 @@ export function Customers() {
     } catch (error) {
       console.error('Erreur loadCustomers:', error);
       addNotification('Erreur lors du chargement des clients', 'error');
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -1,5 +1,5 @@
 import { PackageSearch, ShoppingCart, Tags, LayoutDashboard, Menu, X, BarChart2, Users, BanknoteIcon, LogOut } from 'lucide-react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 import { logout } from '../data/auth';

@@ -5,7 +5,7 @@ export function CurrencySelector() {
 
   return (
     <select
-      value={currency.code}
+      value={currency}
       onChange={(e) => setCurrency(e.target.value)}
       className="ml-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
     >

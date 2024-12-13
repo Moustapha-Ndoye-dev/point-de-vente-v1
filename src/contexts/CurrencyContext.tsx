@@ -1,14 +1,15 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 interface CurrencyContextType {
   currency: string;
+  setCurrency: (currency: string) => void;
   formatAmount: (amount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [currency] = useState<string>('XOF');
+  const [currency, setCurrency] = useState<string>('XOF');
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -18,7 +19,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, formatAmount }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount }}>
       {children}
     </CurrencyContext.Provider>
   );

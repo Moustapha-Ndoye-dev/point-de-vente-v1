@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../supabaseClient';
 
 interface Enterprise {
   id: string;
@@ -19,11 +18,8 @@ interface EnterpriseContextType {
 const EnterpriseContext = createContext<EnterpriseContextType | undefined>(undefined);
 
 export function EnterpriseProvider({ children }: { children: ReactNode }) {
-  const [enterprise, setEnterprise] = useState<Enterprise | null>(() => {
-    const stored = localStorage.getItem('enterprise');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [loading, setLoading] = useState(false);
+  const [enterprise, setEnterprise] = useState<Enterprise | null>(null);
+  const [loading] = useState(false);
 
   useEffect(() => {
     if (enterprise) {

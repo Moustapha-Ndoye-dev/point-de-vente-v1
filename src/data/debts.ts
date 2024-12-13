@@ -2,8 +2,6 @@
 
 import { supabase } from '../supabaseClient';
 import { Debt, Customer } from '../types/types';
-import { useNotifications } from '../contexts/NotificationContext';
-import { useCurrency } from '../contexts/CurrencyContext';
 
 // Récupérer les dettes selon les filtres
 interface FetchDebtsFilters {
@@ -12,7 +10,7 @@ interface FetchDebtsFilters {
     timeRange?: 'today' | 'week' | 'month' | 'all';
 }
 
-export const fetchDebts = async (enterpriseId: string, filter: any) => {
+export const fetchDebts = async (enterpriseId: string, filter: FetchDebtsFilters) => {
     let query = supabase
         .from('debt')
         .select('*')

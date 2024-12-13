@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Category } from '../types/types';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useEnterprise } from '../contexts/EnterpriseContext';

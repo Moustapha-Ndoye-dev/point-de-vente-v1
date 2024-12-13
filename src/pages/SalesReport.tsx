@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Menu } from '@headlessui/react';
-import { Calendar, Download, Search, DollarSign, Package, Box, Star } from 'lucide-react';
-import { Sale, Customer } from '../types/types';
+import { Calendar, Download, DollarSign, Package, Box, Star } from 'lucide-react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -18,7 +17,6 @@ export function SalesReport() {
   const enterpriseId = enterprise?.id;
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const { formatAmount } = useCurrency();
-  const [sales, setSales] = useState<Sale[]>([]);
   const [salesInfo, setSalesInfo] = useState<any[]>([]);
   const [totalItemsSold, setTotalItemsSold] = useState<number>(0);
   const [totalProductsInStock, setTotalProductsInStock] = useState<number>(0);
@@ -26,7 +24,6 @@ export function SalesReport() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(5);
-  const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,7 +33,7 @@ export function SalesReport() {
       }
 
       try {
-        const [salesFromDB, customersFromDB, productsFromDB] = await Promise.all([
+        const [salesFromDB, , productsFromDB] = await Promise.all([
           fetchAllSales(enterpriseId),
           fetchCustomers(enterpriseId),
           fetchProducts(enterpriseId)
@@ -64,11 +61,9 @@ export function SalesReport() {
 
         const totalInStock = productsFromDB.reduce((sum, product) => sum + (product.stock || 0), 0);
 
-        setSales(salesFromDB);
         setTotalItemsSold(totalItemsSoldFromDB);
         setTotalProductsInStock(totalInStock);
         setTotalSales(totalSalesAmount);
-        setCustomers(customersFromDB);
 
         // Fetch sale info for each sale
         const salesInfoPromises = salesFromDB.map(sale => getSaleInfo(sale.id, enterpriseId));
@@ -82,41 +77,6 @@ export function SalesReport() {
 
     loadData();
   }, [timeRange, enterpriseId]);
-
-  const filteredSales = useMemo(() => {
-    if (!sales.length || !enterpriseId) return [];
-
-    const now = new Date();
-    return sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt);
-      
-      if (sale.enterpriseId !== enterpriseId) return false;
-      
-      const matchesTimeRange = (() => {
-        switch (timeRange) {
-          case 'today':
-            return saleDate.toDateString() === now.toDateString();
-          case 'week': {
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            return saleDate >= weekAgo;
-          }
-          case 'month':
-            return saleDate.getMonth() === now.getMonth() && 
-                   saleDate.getFullYear() === now.getFullYear();
-          default:
-            return true;
-        }
-      })();
-
-      const matchesSearch = !searchTerm.trim() || 
-        sale.customer?.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesCustomer = !searchTerm.trim() || 
-        customers.find(c => c.id === sale.customerId)?.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-      return matchesTimeRange && matchesSearch && matchesCustomer;
-    });
-  }, [sales, timeRange, searchTerm, customers, enterpriseId]);
 
   const combinedSales = useMemo(() => {
     if (!enterpriseId || !salesInfo.length) {

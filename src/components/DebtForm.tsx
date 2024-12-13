@@ -14,7 +14,8 @@ export function DebtForm({ onSubmit }: DebtFormProps) {
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Changed due_date to dueDate
     saleId: '', // Changed sale_id to saleId
     settled: false,
-    createdAt: new Date().toISOString() // Changed created_at to createdAt
+    createdAt: new Date().toISOString(), // Changed created_at to createdAt
+    enterpriseId: '' // Ajoutez cette ligne
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,6 +52,16 @@ export function DebtForm({ onSubmit }: DebtFormProps) {
           required
           value={formData.dueDate} // Changed dueDate to due_date
           onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Enterprise ID</label>
+        <input
+          type="text"
+          required
+          value={formData.enterpriseId}
+          onChange={e => setFormData(prev => ({ ...prev, enterpriseId: e.target.value }))}
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>

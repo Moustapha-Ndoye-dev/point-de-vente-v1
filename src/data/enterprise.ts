@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient';
 import { Enterprise } from '../types/types';
 import bcrypt from 'bcryptjs';
-import { createSession, verifySession } from './auth';
+import { createSession } from './auth';
 
 interface Session {
   token: string;
