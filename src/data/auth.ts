@@ -143,14 +143,12 @@ export const checkSession = async (): Promise<{
     const { payload } = await jwtVerify(token, JWT_SECRET);
     const enterpriseData = JSON.parse(savedEnterprise);
 
-    // Vérification plus stricte de la session
     if (payload.sub !== enterpriseData.id || payload.exp! * 1000 < Date.now()) {
       localStorage.removeItem('token');
       localStorage.removeItem('enterprise');
       return { isValid: false, enterprise: null };
     }
 
-    // Vérification côté serveur
     const { data: enterprise, error } = await supabase
       .from('enterprise')
       .select('*')
@@ -161,11 +159,6 @@ export const checkSession = async (): Promise<{
       localStorage.removeItem('token');
       localStorage.removeItem('enterprise');
       return { isValid: false, enterprise: null };
-    }
-
-    // Rediriger uniquement si on est sur login/register
-    if (window.location.pathname === '/login' || window.location.pathname === '/register') {
-      window.location.href = '/dashboard';
     }
 
     return { isValid: true, enterprise: enterpriseData };
