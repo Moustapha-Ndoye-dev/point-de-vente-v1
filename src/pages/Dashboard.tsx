@@ -47,7 +47,7 @@ export function Dashboard() {
   const stats = useMemo(() => {
     const now = new Date();
     const filteredSales = sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt);
+      const saleDate = new Date(sale.created_at);
       if (timeRange === 'day') {
         return saleDate.toDateString() === now.toDateString();
       } else {
