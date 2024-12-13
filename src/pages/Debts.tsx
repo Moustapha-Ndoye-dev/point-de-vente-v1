@@ -243,195 +243,122 @@ export function Debts() {
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <div className="hidden md:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Montant total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Montant payé
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reste à payer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Échéance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentDebts.map((debt) => {
-                const paidAmount = getPaidAmount(debt.id);
-                const remainingAmount = getRemainingAmount(debt);
-                const customerName = customers[debt.customerId];
-                const dueDateFormatted = debt.dueDate
-                  ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })
-                  : 'N/A';
+      {currentDebts.length === 0 ? (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="text-center py-12">
+            <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">Aucune dette</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Il n'y a actuellement aucune dette à afficher pour les critères sélectionnés.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Montant total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Montant payé
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Reste à payer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Échéance
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentDebts.map((debt) => {
+                  const paidAmount = getPaidAmount(debt.id);
+                  const remainingAmount = getRemainingAmount(debt);
+                  const customerName = customers[debt.customerId];
+                  const dueDateFormatted = debt.dueDate
+                    ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                    : 'N/A';
 
-                return (
-                  <tr key={debt.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <UserRound className="w-5 h-5 text-gray-400 mr-2" />
-                        <div className="text-sm font-medium text-gray-900">
-                          {customerName || 'Client inconnu'}
+                  return (
+                    <tr key={debt.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <UserRound className="w-5 h-5 text-gray-400 mr-2" />
+                          <div className="text-sm font-medium text-gray-900">
+                            {customerName || 'Client inconnu'}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatAmount(debt.amount)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-green-600">
-                        {formatAmount(paidAmount)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-red-600">
-                        {formatAmount(remainingAmount)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {dueDateFormatted}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {debt.settled ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Réglée
-                        </span>
-                      ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          En retard
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          En cours
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {!debt.settled && remainingAmount > 0 && (
-                        <button
-                          onClick={() => handlePayment(debt.id)}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                        >
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          Payer
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatAmount(debt.amount)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-green-600">
+                          {formatAmount(paidAmount)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-red-600">
+                          {formatAmount(remainingAmount)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {dueDateFormatted}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {debt.settled ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Réglée
+                          </span>
+                        ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            En retard
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            En cours
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {!debt.settled && remainingAmount > 0 && (
+                          <button
+                            onClick={() => handlePayment(debt.id)}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                          >
+                            <DollarSign className="w-4 h-4 mr-1" />
+                            Payer
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        {/* Vue mobile en cartes */}
-        <div className="md:hidden">
-          {currentDebts.map((debt) => {
-            const paidAmount = getPaidAmount(debt.id);
-            const remainingAmount = getRemainingAmount(debt);
-            const customerName = customers[debt.customerId];
-            const dueDateFormatted = debt.dueDate
-              ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })
-              : 'N/A';
-
-            return (
-              <div key={debt.id} className="border-b border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <UserRound className="w-5 h-5 text-gray-400 mr-2" />
-                    <span className="text-sm font-medium text-gray-900">
-                      {customerName || 'Client inconnu'}
-                    </span>
-                  </div>
-                  {debt.settled ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Réglée
-                    </span>
-                  ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      En retard
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      En cours
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                  <div>
-                    <span className="text-gray-500">Montant total:</span>
-                    <span className="block font-medium text-gray-900">
-                      {formatAmount(debt.amount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Montant payé:</span>
-                    <span className="block font-medium text-green-600">
-                      {formatAmount(paidAmount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Reste à payer:</span>
-                    <span className="block font-medium text-red-600">
-                      {formatAmount(remainingAmount)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Échéance:</span>
-                    <span className="block font-medium text-gray-900">
-                      {dueDateFormatted}
-                    </span>
-                  </div>
-                </div>
-
-                {!debt.settled && remainingAmount > 0 && (
-                  <button
-                    onClick={() => handlePayment(debt.id)}
-                    className="w-full mt-2 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    <DollarSign className="w-4 h-4 mr-1" />
-                    Payer
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
-          {currentDebts.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              Aucune dette trouvée
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {debts.length > 0 && (
         <Pagination
