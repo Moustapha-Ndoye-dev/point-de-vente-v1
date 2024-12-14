@@ -24,6 +24,10 @@ export function Inventory() {
   
   const { enterprise } = useEnterprise();
 
+  const filteredProducts = products.filter(product => 
+    selectedCategoryId ? product.categoryId === selectedCategoryId : true
+  );
+
   const {
     currentItems: currentProducts,
     currentPage,
@@ -31,7 +35,7 @@ export function Inventory() {
     itemsPerPage,
     goToPage,
     changeItemsPerPage
-  } = usePagination(products);
+  } = usePagination(filteredProducts);
 
   const loadProducts = async () => {
     if (!enterprise?.id) return;
@@ -66,6 +70,10 @@ export function Inventory() {
     };
     loadCategories();
   }, [enterprise?.id]);
+
+  useEffect(() => {
+    goToPage(1);
+  }, [selectedCategoryId]);
 
   const handleSubmit = async (productData: Omit<Product, 'id'>) => {
     try {
@@ -333,13 +341,13 @@ export function Inventory() {
         {isMobile ? renderMobileProductList() : renderDesktopProductList()}
       </div>
 
-      {products.length === 0 && (
+      {filteredProducts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">Aucun produit enregistré</p>
         </div>
       )}
 
-      {products.length > 0 && (
+      {filteredProducts.length > 0 && (
         <div className="mt-6">
           <Pagination
             currentPage={currentPage}
