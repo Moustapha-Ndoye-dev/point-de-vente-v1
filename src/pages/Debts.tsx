@@ -166,6 +166,80 @@ export function Debts() {
     setShowPaymentModal(true);
   }, [debts, getRemainingAmount]);
 
+  const renderMobileDebtList = () => (
+    <div className="space-y-4">
+      {currentDebts.map((debt) => {
+        const paidAmount = getPaidAmount(debt.id);
+        const remainingAmount = getRemainingAmount(debt);
+        const customerName = customers[debt.customerId];
+        const dueDateFormatted = debt.dueDate
+          ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })
+          : 'N/A';
+
+        return (
+          <div key={debt.id} className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  <UserRound className="h-5 w-5 text-gray-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">{customerName || 'Client inconnu'}</h3>
+                  <p className="text-sm text-gray-500">{dueDateFormatted}</p>
+                </div>
+              </div>
+              <div>
+                {debt.settled ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Réglée
+                  </span>
+                ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    En retard
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    En cours
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-500">Montant total</p>
+                <p className="text-sm font-medium text-gray-900">{formatAmount(debt.amount)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Montant payé</p>
+                <p className="text-sm font-medium text-green-600">{formatAmount(paidAmount)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Reste à payer</p>
+                <p className="text-sm font-medium text-red-600">{formatAmount(remainingAmount)}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              {!debt.settled && (
+                <button
+                  onClick={() => handlePayment(debt.id)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Payer
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="p-4 sm:p-6">
       {showPaymentModal && selectedDebtId && (
@@ -255,7 +329,10 @@ export function Debts() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="md:hidden">
+            {renderMobileDebtList()}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
