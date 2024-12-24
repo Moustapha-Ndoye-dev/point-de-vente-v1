@@ -81,124 +81,168 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
           Créer un compte entreprise
         </h2>
       </div>
 
-      <div className="mt-6 sm:mt-8 sm:mx-auto w-full sm:max-w-md">
-        <div className="bg-white py-6 sm:py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
+        <div className="bg-white py-8 px-4 shadow-xl shadow-indigo-100/50 sm:rounded-lg sm:px-10 border border-indigo-50">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
-                {error}
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r">
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Nom de l'entreprise
                 </label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
+                <div className="mt-1">
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email
                 </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
+                <div className="mt-1">
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Mot de passe
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
+                <div className="mt-1">
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                   Confirmer le mot de passe
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                />
+                <div className="mt-1">
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Téléphone
                 </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
+                <div className="mt-1">
+                  <input
+                    id="phone"
+                    type="tel"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
                   Adresse
                 </label>
-                <textarea
-                  id="address"
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 sm:p-3 text-sm sm:text-base"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
+                <div className="mt-1">
+                  <textarea
+                    id="address"
+                    required
+                    className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
+                              shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
+                              focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
+                              bg-gray-50/50 hover:bg-white"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              className="w-full h-10 flex justify-center items-center py-2 px-4 border border-transparent 
+                       rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 
+                       hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                       focus:ring-indigo-500 transition-all disabled:opacity-50 
+                       disabled:cursor-not-allowed"
             >
-              {loading ? 'Création en cours...' : 'Créer le compte'}
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  Création en cours...
+                </span>
+              ) : (
+                'Créer le compte'
+              )}
             </button>
           </form>
         </div>
       </div>
 
-      <div className="mt-4 sm:mt-6 text-center">
-        <span className="text-sm sm:text-base text-gray-600">
+      <div className="mt-8 text-center">
+        <span className="text-sm text-gray-600">
           Déjà un compte ? {' '}
           <Link 
             to="/login" 
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
           >
             Connectez-vous maintenant
           </Link>

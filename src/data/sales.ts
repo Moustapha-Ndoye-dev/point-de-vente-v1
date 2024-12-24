@@ -516,3 +516,70 @@ export const getPeriodicSaleInfo = async (
     return null;
   }
 };
+
+export const createDebtSale = async (
+  cartItems: CartItem[],
+  customerId: string,
+  enterpriseId: string,
+  dueDate: string
+): Promise<Sale | null> => {
+  try {
+    const total = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    
+    // Créer la vente
+    const { data: sale, error: saleError } = await supabase
+      .from('sale')
+      .insert([{
+        customer_id: customerId,
+        total: total,
+        paid_amount: 0,
+        remaining_amount: total,
+        payment_method: 'debt',
+        status: 'pending',
+        due_date: dueDate,
+        created_at: new Date().toISOString(),
+        enterprise_id: enterpriseId
+      }])
+      .select()
+      .single();
+
+    if (saleError) throw saleError;
+
+    // Créer les items de la vente
+    const saleItems = cartItems.map(item => ({
+      sale_id: sale.id,
+      product_id: item.product.id,
+      quantity: item.quantity,
+      unitPrice: item.product.price,
+      subtotal: item.product.price * item.quantity,
+      enterprise_id: enterpriseId
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('sale_item')
+      .insert(saleItems);
+
+    if (itemsError) throw itemsError;
+
+    // Créer l'entrée de dette
+    const { error: debtError } = await supabase
+      .from('debt')
+      .insert([{
+        sale_id: sale.id,
+        customer_id: customerId,
+        amount: total,
+        due_date: dueDate,
+        settled: false,
+        enterprise_id: enterpriseId,
+        created_at: new Date().toISOString()
+      }]);
+
+    if (debtError) throw debtError;
+
+    return await fetchSaleDetails(sale.id, enterpriseId);
+
+  } catch (error) {
+    console.error('Erreur lors de la création de la vente avec dette:', error);
+    return null;
+  }
+};

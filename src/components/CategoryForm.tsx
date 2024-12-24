@@ -71,7 +71,7 @@ export function CategoryForm({ onSubmit, initialCategory, onClose }: CategoryFor
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-fadeIn">
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fadeIn border border-gray-200 rounded-lg p-6">
       <div className="space-y-4">
         <div>
           <label 
@@ -86,12 +86,13 @@ export function CategoryForm({ onSubmit, initialCategory, onClose }: CategoryFor
               type="text"
               required
               className={`
-                mt-1 block w-full rounded-md shadow-sm
-                focus:ring-2 focus:ring-offset-2
+                mt-1 block w-full px-4 py-2
+                border border-gray-300 rounded-lg shadow-sm
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                 transition duration-150 ease-in-out
                 ${errors.name 
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                  : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                  : 'border-gray-300 hover:border-gray-400'
                 }
               `}
               value={formData.name}
@@ -122,7 +123,7 @@ export function CategoryForm({ onSubmit, initialCategory, onClose }: CategoryFor
                 type="color"
                 required
                 className={`
-                  h-10 w-20 rounded-md cursor-pointer
+                  h-10 w-20 rounded-lg border shadow-sm cursor-pointer
                   transition duration-150 ease-in-out
                   ${errors.color 
                     ? 'border-red-300 focus:ring-red-500' 

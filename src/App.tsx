@@ -17,6 +17,7 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import { checkSession } from './data/auth';
 import './index.css';
 import { useLoading } from './contexts/LoadingContext';
+import { InvoiceGenerator } from './components/InvoiceGenerator';
 
 function App() {
   const { enterprise, setEnterprise, setLoading } = useEnterprise();
@@ -83,6 +84,7 @@ function PrivateRoutes() {
           <Route path="/sales-report" element={<SalesReport />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/debts" element={<Debts />} />
+          <Route path="/invoices" element={<InvoiceGenerator />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

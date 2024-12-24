@@ -143,15 +143,15 @@ export function Categories() {
                       setEditingCategory(category);
                       setShowForm(true);
                     }}
-                    className="p-1 text-gray-400 hover:text-gray-500"
+                    className="text-blue-600 hover:text-blue-900 mr-3"
                   >
-                    <Edit2 className="w-5 h-5" />
+                    <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(category.id)}
-                    className="p-1 text-gray-400 hover:text-red-500"
+                    className="text-red-600 hover:text-red-900"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </td>
               </tr>

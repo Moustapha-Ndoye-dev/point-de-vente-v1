@@ -15,6 +15,8 @@ export function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const { addNotification } = useNotifications();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const {
     currentItems: currentCustomers,
@@ -74,47 +76,67 @@ export function Customers() {
     }
     try {
       if (editingCustomer) {
-        const updatedCustomer = await updateCustomer(
+        const result = await updateCustomer(
           editingCustomer.id,
           customerData,
           enterprise.id
         );
-        if (updatedCustomer) {
+        if (result.success) {
           addNotification('Client mis à jour avec succès', 'success');
+          setShowForm(false);
+          await loadCustomers();
+        } else {
+          if (result.error?.includes('numéro de téléphone existe déjà')) {
+            addNotification('Ce numéro de téléphone est déjà utilisé par un autre client', 'warning');
+          } else {
+            addNotification(result.error || 'Erreur lors de la mise à jour', 'error');
+          }
         }
       } else {
-        const newCustomer = await addCustomer(customerData, enterprise.id);
-        if (newCustomer) {
+        const result = await addCustomer(customerData, enterprise.id);
+        if (result.success) {
           addNotification('Client ajouté avec succès', 'success');
+          setShowForm(false);
+          await loadCustomers();
+        } else {
+          if (result.error?.includes('numéro de téléphone existe déjà')) {
+            addNotification('Ce numéro de téléphone est déjà utilisé par un autre client', 'warning');
+          } else {
+            addNotification(result.error || 'Erreur lors de l\'ajout', 'error');
+          }
         }
       }
-      setShowForm(false);
-      await loadCustomers();
     } catch (error) {
       console.error('Erreur handleSubmit:', error);
       addNotification('Erreur lors de l\'enregistrement du client', 'error');
     }
   };
 
-  const handleDelete = async (customerId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
-      try {
-        if (!enterprise?.id) {
-          addNotification('Erreur: ID entreprise non disponible', 'error');
-          return;
-        }
-        const result = await deleteCustomer(customerId, enterprise.id);
-        if (result.success) {
-          addNotification('Client supprimé avec succès', 'success');
-          await loadCustomers();
-        } else {
-          addNotification(result.error || 'Erreur lors de la suppression', 'error');
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-        addNotification('Erreur lors de la suppression', 'error');
-      }
+  const handleDelete = async (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!customerToDelete || !enterprise?.id) {
+      addNotification('Erreur: Données manquantes', 'error');
+      return;
     }
+
+    try {
+      const result = await deleteCustomer(customerToDelete.id, enterprise.id);
+      if (result.success) {
+        addNotification('Client supprimé avec succès', 'success');
+        await loadCustomers();
+      } else {
+        addNotification(result.error || 'Erreur lors de la suppression', 'error');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      addNotification('Erreur lors de la suppression', 'error');
+    }
+    setShowDeleteModal(false);
+    setCustomerToDelete(null);
   };
 
   return (
@@ -192,7 +214,7 @@ export function Customers() {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(customer.id)}
+                    onClick={() => handleDelete(customer)}
                     className="text-red-600 hover:text-red-900"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -240,6 +262,49 @@ export function Customers() {
               onSubmit={handleSubmit}
               initialCustomer={editingCustomer}
             />
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && customerToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Confirmer la suppression
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-600 mb-3">
+                  Êtes-vous sûr de vouloir supprimer {customerToDelete.name} ?
+                </p>
+                <div className="space-y-2">
+                  {customerToDelete.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-500">Téléphone</span>
+                      <span className="text-sm text-gray-900">{customerToDelete.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCustomerToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Confirmer
+              </button>
+            </div>
           </div>
         </div>
       )}

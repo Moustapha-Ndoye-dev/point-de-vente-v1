@@ -58,6 +58,7 @@ export interface Sale {
   status: 'pending' | 'completed' | 'cancelled';
   items: SaleItem[];
   enterpriseId: string;
+  dueDate?: string;
 }
 
 export interface SaleItem {

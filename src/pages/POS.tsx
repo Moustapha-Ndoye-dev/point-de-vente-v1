@@ -155,6 +155,9 @@ export function POS() {
   };
 
   const handlePayment = async () => {
+    console.log("Mode de paiement sélectionné:", paymentMethod);
+    console.log("Est-ce une dette ?", paymentMethod === 'debt');
+
     if (paymentMethod === 'debt' && !selectedCustomer) {
       addNotification('Veuillez sélectionner un client pour la dette', 'error');
       return;
@@ -181,16 +184,23 @@ export function POS() {
     if (sale) {
       await loadProducts();
       addNotification('Vente effectuée avec succès', 'success');
-      setCompletedSale(sale);
+      setCompletedSale({
+        ...sale,
+        paymentMethod: paymentMethod
+      });
       setCart([]);
       setShowPaymentModal(false);
-      setSelectedCustomer(null);
-      setPaymentMethod('cash');
-      setPaymentAmount(0);
-      setDueDate('');
+      resetPaymentForm();
     } else {
       addNotification('Erreur lors de la vente', 'error');
     }
+  };
+
+  const resetPaymentForm = () => {
+    setPaymentMethod('cash');
+    setPaymentAmount(0);
+    setSelectedCustomer(null);
+    setDueDate('');
   };
 
   const ProductCard = ({ product }: { product: Product }) => {
@@ -498,7 +508,10 @@ export function POS() {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-semibold text-indigo-700">Paiement</h3>
               <button
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  resetPaymentForm();
+                }}
                 className="text-gray-400 hover:text-gray-500 focus:outline-none"
               >
                 <X className="h-6 w-6" />
@@ -617,17 +630,20 @@ export function POS() {
                 }
                 className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                Valider le paiement
+                {paymentMethod === 'debt' ? 'Valider' : 'Valider le paiement'}
               </button>
             </div>
           </div>
         </div>
       )}
-
       {completedSale && (
         <Receipt
           sale={completedSale}
-          onClose={() => setCompletedSale(null)}
+          onClose={() => {
+            setCompletedSale(null);
+            resetPaymentForm();
+          }}
+          paymentMethod={paymentMethod}
         />
       )}
     </div>

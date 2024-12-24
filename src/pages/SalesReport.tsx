@@ -110,27 +110,121 @@ export function SalesReport() {
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    const tableColumn = ["Produit", "Quantité", "Prix Initial", "Total"];
-    const tableRows = combinedSales.map(item => [
-      item.name,
-      item.quantity,
-      formatAmount(item.unitPrice),
-      formatAmount(item.subtotal)
-    ]);
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 15;
 
-    doc.text("Rapport des ventes", 14, 15);
-    doc.text(`Période: ${timeRange}`, 14, 25);
+    // En-tête avec dégradé
+    doc.setFillColor(59, 130, 246);
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    // Titre principal
+    doc.setTextColor(255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(28);
+    const title = "Rapport des ventes";
+    const titleWidth = doc.getStringUnitWidth(title) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(title, (pageWidth - titleWidth) / 2, 25);
 
+    // Sous-titre avec la période
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    const period = timeRange === 'today' ? 'Aujourd\'hui' :
+                  timeRange === 'week' ? '7 derniers jours' :
+                  timeRange === 'month' ? 'Ce mois' : 'Toute période';
+    const subtitle = `Période : ${period}`;
+    const subtitleWidth = doc.getStringUnitWidth(subtitle) * doc.getFontSize() / doc.internal.scaleFactor;
+    doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 35);
+
+    // Statistiques principales dans des boîtes
+    const statsY = 60;
+    const boxWidth = (pageWidth - (2 * margin) - 20) / 3;
+    const boxHeight = 30;
+
+    // Fonction pour dessiner une boîte de statistique
+    const drawStatBox = (x: number, title: string, value: string, index: number) => {
+      const colors = ['#EFF6FF', '#F0FDF4'];
+      const textColors = ['#1D4ED8', '#047857'];
+      
+      doc.setFillColor(colors[index]);
+      doc.roundedRect(x, statsY, boxWidth, boxHeight, 3, 3, 'F');
+      
+      doc.setTextColor(textColors[index]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(title, x + 5, statsY + 10);
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value, x + 5, statsY + 22);
+    };
+
+    drawStatBox(margin, "Total des ventes", formatAmount(totalSales), 0);
+    drawStatBox(margin + boxWidth + 10, "Articles vendus", totalItemsSold.toString(), 1);
+
+    // Tableau des ventes avec style amélioré
     autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 30,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [22, 160, 133] },
-      alternateRowStyles: { fillColor: [240, 240, 240] },
+      head: [["Produit", "Quantité", "Prix Initial", "Total"]],
+      body: combinedSales.map(item => [
+        item.name,
+        item.quantity,
+        formatAmount(item.unitPrice),
+        formatAmount(item.subtotal)
+      ]),
+      startY: statsY + boxHeight + 20,
+      styles: {
+        fontSize: 10,
+        cellPadding: 6,
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 30, halign: 'center' },
+        2: { cellWidth: 40, halign: 'right' },
+        3: { cellWidth: 40, halign: 'right' }
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251]
+      },
     });
 
-    doc.text(`Grand Total: ${formatAmount(grandTotal)}`, 14, (doc as any).lastAutoTable.finalY + 10);
+    // Grand Total avec style amélioré
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(pageWidth - 90, finalY, 75, 25, 3, 3, 'F');
+    doc.setTextColor(255);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text("TOTAL", pageWidth - 85, finalY + 10);
+    doc.setFontSize(14);
+    doc.text(formatAmount(grandTotal), pageWidth - 85, finalY + 20);
+
+    // Meilleur produit si disponible
+    if (bestSellingProduct) {
+      const bestY = finalY + 40;
+      doc.setFillColor(254, 243, 199);
+      doc.roundedRect(margin, bestY, pageWidth - (2 * margin), 30, 3, 3, 'F');
+      doc.setTextColor(161, 98, 7);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text("Meilleur produit", margin + 10, bestY + 10);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(`${bestSellingProduct.name} (${bestSellingProduct.quantity} unités)`, margin + 10, bestY + 22);
+    }
+
+    // Pied de page
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(107, 114, 128);
+    doc.text('CONFIDENTIEL', margin, pageHeight - 10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    doc.text(`Page 1/${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
 
     doc.save("rapport-ventes.pdf");
   };

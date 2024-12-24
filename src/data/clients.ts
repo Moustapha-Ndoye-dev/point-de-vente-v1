@@ -46,40 +46,132 @@ export async function searchCustomers(searchTerm: string, enterpriseId: string):
   return data || [];
 }
 
+// Fonction utilitaire pour normaliser un numéro de téléphone
+function normalizePhoneNumber(phone: string): string {
+  // Supprime tous les caractères non numériques
+  return phone.replace(/\D/g, '');
+}
+
 // Ajouter un nouveau client
 export async function addCustomer(
   customerData: Omit<Customer, 'id'>, 
   enterpriseId: string
-): Promise<Customer | null> {
+): Promise<{ success: boolean; data: Customer | null; error?: string }> {
   if (!enterpriseId) {
-    console.error('Enterprise ID est requis');
-    return null;
+    return {
+      success: false,
+      data: null,
+      error: 'Enterprise ID est requis'
+    };
   }
 
-  const { data, error } = await supabase
-    .from('customer')
-    .insert([{ 
-      name: customerData.name,
-      phone: customerData.phone,
-      enterprise_id: enterpriseId
-    }])
-    .select()
-    .single();
-    
-  if (error) {
-    console.error('Erreur lors de l\'ajout du client:', error);
-    return null;
+  try {
+    // Vérifier si le téléphone est fourni
+    if (customerData.phone) {
+      const normalizedPhone = normalizePhoneNumber(customerData.phone);
+      
+      // Récupérer tous les clients avec un numéro de téléphone
+      const { data: existingCustomers, error: searchError } = await supabase
+        .from('customer')
+        .select('phone')
+        .eq('enterprise_id', enterpriseId)
+        .not('phone', 'is', null);
+
+      if (searchError) {
+        return {
+          success: false,
+          data: null,
+          error: 'Erreur lors de la vérification du numéro de téléphone'
+        };
+      }
+
+      // Vérifier si le numéro normalisé existe déjà
+      const phoneExists = existingCustomers.some(
+        customer => normalizePhoneNumber(customer.phone) === normalizedPhone
+      );
+
+      if (phoneExists) {
+        return {
+          success: false,
+          data: null,
+          error: 'Un client avec ce numéro de téléphone existe déjà'
+        };
+      }
+    }
+
+    // Procéder à l'ajout du client
+    const { data, error } = await supabase
+      .from('customer')
+      .insert([{ 
+        name: customerData.name,
+        phone: customerData.phone,
+        enterprise_id: enterpriseId
+      }])
+      .select()
+      .single();
+      
+    if (error) {
+      return {
+        success: false,
+        data: null,
+        error: 'Erreur lors de l\'ajout du client'
+      };
+    }
+
+    return {
+      success: true,
+      data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      error: 'Une erreur inattendue est survenue'
+    };
   }
-  return data;
 }
 
 // Modifier un client existant
 export async function updateCustomer(
   id: string, 
-  customerData: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>, 
+  customerData: Omit<Customer, 'id'>, 
   enterpriseId: string
-): Promise<Customer | null> {
+): Promise<{ success: boolean; data: Customer | null; error?: string }> {
   try {
+    // Vérifier si le téléphone est fourni
+    if (customerData.phone) {
+      const normalizedPhone = normalizePhoneNumber(customerData.phone);
+      
+      // Récupérer tous les autres clients avec un numéro de téléphone
+      const { data: existingCustomers, error: searchError } = await supabase
+        .from('customer')
+        .select('phone')
+        .eq('enterprise_id', enterpriseId)
+        .neq('id', id)
+        .not('phone', 'is', null);
+
+      if (searchError) {
+        return {
+          success: false,
+          data: null,
+          error: 'Erreur lors de la vérification du numéro de téléphone'
+        };
+      }
+
+      // Vérifier si le numéro normalisé existe déjà
+      const phoneExists = existingCustomers.some(
+        customer => normalizePhoneNumber(customer.phone) === normalizedPhone
+      );
+
+      if (phoneExists) {
+        return {
+          success: false,
+          data: null,
+          error: 'Un client avec ce numéro de téléphone existe déjà'
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('customer')
       .update({
@@ -92,14 +184,23 @@ export async function updateCustomer(
       .single();
       
     if (error) {
-      console.error('Erreur lors de la mise à jour du client:', error);
-      return null;
+      return {
+        success: false,
+        data: null,
+        error: 'Erreur lors de la mise à jour du client'
+      };
     }
 
-    return data;
+    return {
+      success: true,
+      data: data
+    };
   } catch (error) {
-    console.error('Erreur inattendue:', error);
-    return null;
+    return {
+      success: false,
+      data: null,
+      error: 'Une erreur inattendue est survenue'
+    };
   }
 }
 

@@ -21,6 +21,8 @@ export function Inventory() {
   const { formatAmount } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   
   const { enterprise } = useEnterprise();
 
@@ -107,24 +109,31 @@ export function Inventory() {
   };
 
   const handleDelete = async (productId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-      try {
-        if (!enterprise?.id) {
-          addNotification('Erreur: Entreprise non identifiée', 'error');
-          return;
-        }
-        
-        const success = await deleteProduct(productId, enterprise.id);
-        if (success) {
-          addNotification('Produit supprimé avec succès', 'success');
-          loadProducts();
-        } else {
-          throw new Error('Échec de la suppression');
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-        addNotification('Erreur lors de la suppression', 'error');
+    try {
+      if (!enterprise?.id) {
+        addNotification('Erreur: Entreprise non identifiée', 'error');
+        return;
       }
+      
+      const success = await deleteProduct(productId, enterprise.id);
+      if (success) {
+        addNotification('Produit supprimé avec succès', 'success');
+        loadProducts();
+      } else {
+        throw new Error('Échec de la suppression');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      addNotification('Erreur lors de la suppression', 'error');
+    } finally {
+      setShowDeleteModal(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      handleDelete(productToDelete.id);
     }
   };
 
@@ -182,7 +191,10 @@ export function Inventory() {
                   <Edit2 className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() => {
+                    setProductToDelete(product);
+                    setShowDeleteModal(true);
+                  }}
                   className="text-red-600 hover:text-red-900 p-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -293,7 +305,10 @@ export function Inventory() {
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => {
+                      setProductToDelete(product);
+                      setShowDeleteModal(true);
+                    }}
                     className="text-red-600 hover:text-red-900"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -380,6 +395,55 @@ export function Inventory() {
               categories={categories}
               onClose={() => setShowForm(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && productToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Confirmer la suppression
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-600 mb-3">
+                  Êtes-vous sûr de vouloir supprimer {productToDelete.name} ?
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Prix</span>
+                    <span className="text-sm text-gray-900">{formatAmount(productToDelete.price)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Stock</span>
+                    <span className="text-sm text-gray-900">{productToDelete.stock} unités</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Catégorie</span>
+                    <span className="text-sm text-gray-900">{getCategoryName(productToDelete.categoryId)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setProductToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Confirmer
+              </button>
+            </div>
           </div>
         </div>
       )}

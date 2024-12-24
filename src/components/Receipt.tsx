@@ -5,6 +5,7 @@ import { formatAmount } from '../utils/format';
 interface ReceiptProps {
   sale: Sale;
   onClose: () => void;
+  paymentMethod: 'cash' | 'card' | 'debt';
 }
 
 export function Receipt({ sale, onClose }: ReceiptProps) {
@@ -12,12 +13,12 @@ export function Receipt({ sale, onClose }: ReceiptProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-4 sm:p-8 w-full max-w-md mx-auto shadow-xl print:page-break-inside-avoid overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
-          <h3 className="text-xl sm:text-2xl font-semibold text-indigo-700">Ticket</h3>
+          <h3 className="tezxt-xl sm:text-2xl font-semibold text-indigo-700">Ticket</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 focus:outline-none"
           >
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6 print:hidden" />
           </button>
         </div>
 
@@ -71,30 +72,41 @@ export function Receipt({ sale, onClose }: ReceiptProps) {
               <span>Total</span>
               <span>{formatAmount(sale.total)}</span>
             </div>
-            <div className="flex justify-between text-xs sm:text-sm text-gray-700">
-              <span>Montant payé</span>
-              <span>{formatAmount(sale.paid_amount)}</span>
-            </div>
-            <div className="flex justify-between text-xs sm:text-sm text-gray-700">
-              <span>Monnaie</span>
-              <span>{sale.paymentMethod === 'debt' ? formatAmount(0) : formatAmount(sale.remaining_amount)}</span>
-            </div>
+            {sale.paymentMethod !== 'debt' ? (
+              <>
+                <div className="flex justify-between text-xs sm:text-sm text-gray-700">
+                  <span>Montant payé</span>
+                  <span>{formatAmount(sale.paid_amount)}</span>
+                </div>
+                {sale.paid_amount > sale.total && (
+                  <div className="flex justify-between text-xs sm:text-sm text-gray-700">
+                    <span>Monnaie</span>
+                    <span>{formatAmount(sale.paid_amount - sale.total)}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-between text-xs sm:text-sm text-red-700 font-medium">
+                <span>Montant de la dette</span>
+                <span>{formatAmount(sale.total)}</span>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 text-center">
             <p className="text-xs sm:text-sm text-gray-600 print:hidden">Merci à bientôt!</p>
             <div className="flex justify-center space-x-3 sm:space-x-4 mt-4 print:hidden">
               <button
-                onClick={() => window.print()}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none"
+                onClick={onClose}
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
-                Imprimer
+                Fermer
               </button>
               <button
-                onClick={onClose}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none"
+                onClick={() => window.print()}
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
-                Annuler
+                Imprimer
               </button>
             </div>
           </div>
