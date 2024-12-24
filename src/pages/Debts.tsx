@@ -37,10 +37,13 @@ export function Debts() {
     changeItemsPerPage
   } = usePagination(debts, 10); // Default items per page
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const loadData = useCallback(async () => {
     if (!enterpriseId) return;
     
     try {
+      setIsLoading(true);
       const filters: any = {};
 
       if (filterType !== 'all') {
@@ -54,11 +57,8 @@ export function Debts() {
         filters.timeRange = timeRange;
       }
 
-      filters.limit = itemsPerPage;
-      filters.offset = (currentPage - 1) * itemsPerPage;
-
-      const fetchedDebts = await fetchDebts(enterpriseId!, filters);
-      setDebts(fetchedDebts);
+      const fetchedDebts = await fetchDebts(enterpriseId, filters);
+      setDebts(fetchedDebts || []);
 
       const fetchedCustomers = await fetchCustomers();
       const customersMap: { [key: string]: string } = {};
@@ -69,8 +69,10 @@ export function Debts() {
     } catch (error) {
       console.error('Erreur lors du chargement des dettes:', error);
       addNotification('Erreur lors du chargement des dettes.', 'error');
+    } finally {
+      setIsLoading(false);
     }
-  }, [filterType, timeRange, currentPage, itemsPerPage, addNotification, enterpriseId]);
+  }, [filterType, timeRange, enterpriseId, addNotification]);
 
   useEffect(() => {
     loadData();
@@ -241,211 +243,224 @@ export function Debts() {
   );
 
   return (
-    <div className="p-4 sm:p-6">
-      {showPaymentModal && selectedDebtId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Enregistrer un paiement</h3>
-              <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-500">
-                <X className="w-5 h-5" />
-              </button>
+    <div className="container mx-auto px-4 py-8">
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p>Chargement...</p>
+        </div>
+      ) : (
+        <>
+          {showPaymentModal && selectedDebtId && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Enregistrer un paiement</h3>
+                  <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-500">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Montant du paiement</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <input
+                        type="number"
+                        min="0"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                        className="block w-full pr-12 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">FCFA</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleAddPayment}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Valider le paiement
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Montant du paiement</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <input
-                    type="number"
-                    min="0"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                    className="block w-full pr-12 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 sm:text-sm">FCFA</span>
+          )}
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des dettes</h2>
+
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par client..."
+                  value={searchTerm}
+                  onChange={(e) => { setSearchTerm(e.target.value); goToPage(1); }}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value as 'all' | 'pending' | 'settled' | 'overdue'); goToPage(1); }}
+                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="pending">En cours</option>
+                <option value="settled">Réglées</option>
+                <option value="overdue">En retard</option>
+              </select>
+              <select
+                value={timeRange}
+                onChange={(e) => { setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month'); goToPage(1); }}
+                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="all">Toute période</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+              </select>
+            </div>
+          </div>
+
+          {currentDebts.length === 0 ? (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="text-center py-12">
+                <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">Aucune dette</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Il n'y a actuellement aucune dette à afficher pour les critères sélectionnés.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="block md:hidden">
+                {renderMobileDebtList()}
+              </div>
+              
+              <div className="hidden md:block">
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Client
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Montant total
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Montant payé
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Reste à payer
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Échéance
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Statut
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {currentDebts.map((debt) => {
+                          const paidAmount = getPaidAmount(debt.id);
+                          const remainingAmount = getRemainingAmount(debt);
+                          const customerName = customers[debt.customerId];
+                          const dueDateFormatted = debt.dueDate
+                            ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })
+                            : 'N/A';
+
+                          return (
+                            <tr key={debt.id}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <UserRound className="w-5 h-5 text-gray-400 mr-2" />
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {customerName || 'Client inconnu'}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {formatAmount(debt.amount)}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-green-600">
+                                  {formatAmount(paidAmount)}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-red-600">
+                                  {formatAmount(remainingAmount)}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-500">
+                                  {dueDateFormatted}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {debt.settled ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Réglée
+                                  </span>
+                                ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    En retard
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    En cours
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {!debt.settled && remainingAmount > 0 && (
+                                  <button
+                                    onClick={() => handlePayment(debt.id)}
+                                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    <DollarSign className="w-4 h-4 mr-1" />
+                                    Payer
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleAddPayment}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Valider le paiement
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des dettes</h2>
-
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher par client..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); goToPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          {debts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={changeItemsPerPage}
+              itemsPerPageOptions={[5, 10, 20]}
             />
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <select
-            value={filterType}
-            onChange={(e) => { setFilterType(e.target.value as 'all' | 'pending' | 'settled' | 'overdue'); goToPage(1); }}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="pending">En cours</option>
-            <option value="settled">Réglées</option>
-            <option value="overdue">En retard</option>
-          </select>
-          <select
-            value={timeRange}
-            onChange={(e) => { setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month'); goToPage(1); }}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="all">Toute période</option>
-            <option value="today">Aujourd'hui</option>
-            <option value="week">Cette semaine</option>
-            <option value="month">Ce mois</option>
-          </select>
-        </div>
-      </div>
-
-      {currentDebts.length === 0 ? (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="text-center py-12">
-            <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">Aucune dette</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Il n'y a actuellement aucune dette à afficher pour les critères sélectionnés.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="md:hidden">
-            {renderMobileDebtList()}
-          </div>
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Montant total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Montant payé
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reste à payer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Échéance
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentDebts.map((debt) => {
-                  const paidAmount = getPaidAmount(debt.id);
-                  const remainingAmount = getRemainingAmount(debt);
-                  const customerName = customers[debt.customerId];
-                  const dueDateFormatted = debt.dueDate
-                    ? new Date(debt.dueDate).toLocaleDateString('fr-FR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })
-                    : 'N/A';
-
-                  return (
-                    <tr key={debt.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <UserRound className="w-5 h-5 text-gray-400 mr-2" />
-                          <div className="text-sm font-medium text-gray-900">
-                            {customerName || 'Client inconnu'}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatAmount(debt.amount)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-green-600">
-                          {formatAmount(paidAmount)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-red-600">
-                          {formatAmount(remainingAmount)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {dueDateFormatted}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {debt.settled ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Réglée
-                          </span>
-                        ) : (debt.dueDate && new Date(debt.dueDate) < new Date()) ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            En retard
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            En cours
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {!debt.settled && remainingAmount > 0 && (
-                          <button
-                            onClick={() => handlePayment(debt.id)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                          >
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            Payer
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {debts.length > 0 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={goToPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={changeItemsPerPage}
-          itemsPerPageOptions={[5, 10, 20]}
-        />
+          )}
+        </>
       )}
     </div>
   );
