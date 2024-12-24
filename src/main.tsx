@@ -2,22 +2,15 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { EnterpriseProvider } from './contexts/EnterpriseContext';
-import { NotificationProvider } from './contexts/NotificationContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import './i18n/config';
-import { LoadingProvider } from './contexts/LoadingContext';
 
-createRoot(document.getElementById('app')!).render(
+const rootElement = document.getElementById('app');
+
+if (!rootElement) {
+  throw new Error("L'élément racine 'app' n'a pas été trouvé");
+}
+
+createRoot(rootElement).render(
   <StrictMode>
-    <LoadingProvider>
-      <EnterpriseProvider>
-        <LanguageProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </LanguageProvider>
-      </EnterpriseProvider>
-    </LoadingProvider>
+    <App />
   </StrictMode>,
 );

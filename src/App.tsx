@@ -20,15 +20,14 @@ import { useLoading } from './contexts/LoadingContext';
 import { InvoiceGenerator } from './components/InvoiceGenerator';
 
 function App() {
-  const { enterprise, setEnterprise, setLoading } = useEnterprise();
+  const { enterprise, setEnterprise } = useEnterprise();
   const { setIsLoading } = useLoading();
   const [initializing, setInitializing] = useState(true);
 
-
   useEffect(() => {
     const verifySession = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
         const { isValid, enterprise: validEnterprise } = await checkSession();
         if (isValid && validEnterprise) {
           setEnterprise(validEnterprise);
@@ -39,32 +38,31 @@ function App() {
         console.error('Erreur de vérification de session:', error);
         setEnterprise(null);
       } finally {
-        setLoading(false);
         setIsLoading(false);
         setInitializing(false);
       }
     };
 
     verifySession();
-  }, [setEnterprise, setLoading, setIsLoading]);
+  }, [setEnterprise, setIsLoading]);
+
+  if (initializing) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center p-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <NotificationProvider>
       <CurrencyProvider>
         <div className="min-h-screen bg-gray-50">
-          {initializing ? (
-            <div className="flex items-center justify-center h-screen">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Chargement...</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {enterprise ? <PrivateRoutes /> : <PublicRoutes />}
-              <NotificationCenter />
-            </>
-          )}
+          {enterprise ? <PrivateRoutes /> : <PublicRoutes />}
+          <NotificationCenter />
         </div>
       </CurrencyProvider>
     </NotificationProvider>

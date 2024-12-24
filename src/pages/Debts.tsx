@@ -45,7 +45,8 @@ export function Debts() {
     try {
       setIsLoading(true);
       const filters: any = {};
-
+      filters.limit = itemsPerPage; 
+      filters.offset = (currentPage - 1) * itemsPerPage;
       if (filterType !== 'all') {
         filters.settled = filterType === 'settled';
         if (filterType === 'overdue') {
