@@ -3,6 +3,8 @@ export interface Category {
   name: string;
   description?: string;
   color: string;
+  enterpriseId: string;
+  products?: Product[];
 }
 
 export interface Product {
@@ -11,53 +13,63 @@ export interface Product {
   price: number;
   stock: number;
   description?: string;
-  categoryId: string; // Changed category_id to categoryId
-  imageUrl?: string; // Changed image_url to imageUrl
-  category?: Category;
+  categoryId: string;
+  imageUrl?: string;
+  enterpriseId: string;
+  createdAt: string;
+  updatedAt: string;
 }
-
-// types.ts
 
 export interface Customer {
   id: string;
   name: string;
   phone: string;
+  enterpriseId: string;
   createdAt: string;
+  updatedAt: string;
+  totalPurchases?: number;
+  totalDebts?: number;
 }
-
-// types.ts
 
 export interface Debt {
   id: string;
-  saleId: string; // Changed sale_id to saleId
-  customerId: string; // Changed customer_id to customerId
+  saleId: string;
+  customerId: string;
   amount: number;
   settled: boolean;
-  dueDate: string; // Changed due_date to dueDate
-  createdAt: string; // Changed created_at to createdAt
+  dueDate: string;
+  createdAt: string;
   settledAt?: string;
+  enterpriseId: string;
+  customer?: Customer;
+  sale?: Sale;
 }
+
 export interface Sale {
-  date: string | number | Date;
   id: string;
-  customer_id: string;
+  customerId: string;
   customer?: Customer;
   total: number;
   paid_amount: number;
   remaining_amount: number;
   created_at: string;
-  payment_method: string;
-  status: string;
+  date: string;
+  paymentMethod: 'cash' | 'card' | 'debt';
+  status: 'pending' | 'completed' | 'cancelled';
   items: SaleItem[];
+  enterpriseId: string;
+  dueDate?: string;
 }
 
 export interface SaleItem {
-  sale_id: string;
-  product_id: string;
+  id: string;
+  saleId: string;
+  productId: string;
   quantity: number;
-  unit_price: number;
+  unitPrice: number;
   subtotal: number;
   product?: Product;
+  enterpriseId: string;
 }
 
 export interface CartItem {
@@ -66,34 +78,60 @@ export interface CartItem {
 }
 
 export interface PaymentDetails {
-  method: string;
+  method: 'cash' | 'card' | 'debt';
   amount: number;
   customer_id?: string;
 }
+
 export interface Payment {
   id: string;
-  debtId: string; // Changed debt_id to debtId
+  debtId: string;
   amount: number;
-  date: string; // Format de chaîne ISO (ex. "2023-10-05T14:48:00.000Z")
+  date: string;
+  enterpriseId: string;
+  createdAt: string;
 }
 
 export interface DashboardStats {
-    total_sales: number;
-    total_items_sold: number;
-    total_debts: number;
-    unique_customers: number;
-    recent_sales: Sale[]; // ou le type approprié
+  totalSales: number;
+  totalItemsSold: number;
+  totalDebts: number;
+  uniqueCustomers: number;
+  recentSales: Sale[];
+  topProducts: {
+    id: string;
+    name: string;
+    totalQuantity: number;
+    totalAmount: number;
+  }[];
+  salesByPeriod: {
+    period: string;
+    amount: number;
+  }[];
 }
 
 export interface Enterprise {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  address: string;
-  isActive: boolean;
+  phone?: string;
+  address?: string;
+  logoUrl?: string;
+  password?: string;
+  subscriptionStatus: 'active' | 'inactive' | 'trial';
+  subscriptionEndDate: string;
   createdAt: string;
   updatedAt: string;
+  settings?: EnterpriseSettings;
+}
+
+export interface EnterpriseSettings {
+  defaultPaymentMethod: 'cash' | 'card';
+  defaultDueDateDays: number;
+  allowNegativeStock: boolean;
+  requireCustomerForSale: boolean;
+  currency: string;
+  timezone: string;
 }
 
 export interface EnterpriseUser {
@@ -147,4 +185,10 @@ export interface EnterpriseRegistrationData {
     address: string;
   };
   user: RegisterData;
+}
+
+export interface Session {
+  token: string;
+  enterprise: Omit<Enterprise, 'password'>; // Exclude password for security
+  expiresAt: number;
 }

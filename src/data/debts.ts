@@ -10,23 +10,26 @@ interface FetchDebtsFilters {
     timeRange?: 'today' | 'week' | 'month' | 'all';
 }
 
-export const fetchDebts = async (filters: FetchDebtsFilters): Promise<Debt[]> => {
-    let query = supabase.from('debt').select('*');
+export const fetchDebts = async (enterpriseId: string, filter: FetchDebtsFilters) => {
+    let query = supabase
+        .from('debt')
+        .select('*')
+        .eq('enterprise_id', enterpriseId);
 
-    if (filters.settled !== undefined) {
-        query = query.eq('settled', filters.settled);
+    if (filter.settled !== undefined) {
+        query = query.eq('settled', filter.settled);
     }
 
-    if (filters.overdue) {
+    if (filter.overdue) {
         const today = new Date().toISOString();
         query = query.eq('settled', false).lt('due_date', today);
     }
 
-    if (filters.timeRange && filters.timeRange !== 'all') {
+    if (filter.timeRange && filter.timeRange !== 'all') {
         const now = new Date();
         let startDate: string;
 
-        switch (filters.timeRange) {
+        switch (filter.timeRange) {
             case 'today':
                 startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
                 break;
@@ -50,7 +53,6 @@ export const fetchDebts = async (filters: FetchDebtsFilters): Promise<Debt[]> =>
         return [];
     }
 
-    // Mapper les données pour correspondre à l'interface Debt avec camelCase
     return data.map(debt => ({
         id: debt.id,
         saleId: debt.sale_id,
@@ -60,37 +62,91 @@ export const fetchDebts = async (filters: FetchDebtsFilters): Promise<Debt[]> =>
         dueDate: debt.due_date,
         createdAt: debt.created_at,
         settledAt: debt.settled_at,
-    })) as Debt[];
+        enterpriseId: debt.enterprise_id
+    }));
 };
 
 // Récupérer les dettes en cours (non réglées)
-export const fetchPendingDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ settled: false });
+export const fetchPendingDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    return fetchDebts(enterpriseId, { settled: false });
 };
 
 // Récupérer les dettes réglées
-export const fetchSettledDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ settled: true });
+export const fetchSettledDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    return fetchDebts(enterpriseId, { settled: true });
 };
 
 // Récupérer les dettes en retard
-export const fetchOverdueDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ overdue: true });
+export const fetchOverdueDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    const { data, error } = await supabase
+        .from('debt')
+        .select(`
+            *,
+            customer:customer_id (
+                name
+            )
+        `)
+        .eq('enterprise_id', enterpriseId)
+        .eq('settled', false)
+        .lt('due_date', new Date().toISOString());
+
+    if (error) {
+        console.error('Erreur lors de la récupération des dettes en retard:', error);
+        return [];
+    }
+
+    // Transformer les données pour correspondre à l'interface Debt
+    const overdueDebts = data.map(debt => ({
+        id: debt.id,
+        saleId: debt.sale_id,
+        customerId: debt.customer_id,
+        customerName: debt.customer?.name,
+        amount: parseFloat(debt.amount),
+        settled: debt.settled,
+        dueDate: debt.due_date,
+        createdAt: debt.created_at,
+        settledAt: debt.settled_at,
+        enterpriseId: debt.enterprise_id
+    }));
+
+    // Notifier pour chaque dette en retard
+    overdueDebts.forEach(debt => {
+        const daysOverdue = Math.floor(
+            (new Date().getTime() - new Date(debt.dueDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        
+        if (window.Notification && Notification.permission === 'granted') {
+            const message = `Dette en retard de ${daysOverdue} jours pour ${debt.customerName || 'Client inconnu'} - Montant: ${debt.amount} FCFA`;
+            
+            try {
+                new Notification('Dette en retard', {
+                    body: message,
+                    icon: '/notification-icon.png',
+                    tag: `debt-${debt.id}`, // Évite les doublons
+                    requireInteraction: true // La notification reste jusqu'à ce que l'utilisateur interagisse
+                });
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi de la notification:', error);
+            }
+        }
+    });
+
+    return overdueDebts;
 };
 
 // Récupérer les dettes du jour
-export const fetchTodaysDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ timeRange: 'today' });
+export const fetchTodaysDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    return fetchDebts(enterpriseId, { timeRange: 'today' });
 };
 
 // Récupérer les dettes de la semaine
-export const fetchWeeksDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ timeRange: 'week' });
+export const fetchWeeksDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    return fetchDebts(enterpriseId, { timeRange: 'week' });
 };
 
 // Récupérer les dettes du mois
-export const fetchMonthsDebts = async (): Promise<Debt[]> => {
-    return fetchDebts({ timeRange: 'month' });
+export const fetchMonthsDebts = async (enterpriseId: string): Promise<Debt[]> => {
+    return fetchDebts(enterpriseId, { timeRange: 'month' });
 };
 
 // Récupérer toutes les dettes
@@ -119,7 +175,7 @@ export const fetchAllDebts = async (): Promise<Debt[]> => {
 };
 
 // Ajouter une nouvelle dette
-export const addDebt = async (debtData: Omit<Debt, 'id'>): Promise<Debt | null> => {
+export const addDebt = async (debtData: Omit<Debt, 'id'>, enterpriseId: string): Promise<Debt | null> => {
     const { data, error } = await supabase
         .from('debt')
         .insert([{
@@ -130,6 +186,7 @@ export const addDebt = async (debtData: Omit<Debt, 'id'>): Promise<Debt | null> 
             due_date: debtData.dueDate,
             created_at: debtData.createdAt,
             settled_at: debtData.settledAt,
+            enterprise_id: enterpriseId
         }])
         .select()
         .single();
@@ -148,7 +205,8 @@ export const addDebt = async (debtData: Omit<Debt, 'id'>): Promise<Debt | null> 
         dueDate: data.due_date,
         createdAt: data.created_at,
         settledAt: data.settled_at,
-    } as unknown as Debt;
+        enterpriseId: data.enterprise_id
+    };
 };
 
 // Mettre à jour une dette existante
@@ -202,28 +260,52 @@ export const deleteDebt = async (id: string): Promise<boolean> => {
 
 // Marquer une dette comme payée
 export const markDebtAsPaid = async (id: string): Promise<Debt | null> => {
-    const { data, error } = await supabase
-        .from('debt')
-        .update({ settled: true, settled_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
+    try {
+        // D'abord, récupérer la dette pour obtenir le sale_id
+        const { data: debtData, error: debtError } = await supabase
+            .from('debt')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    if (error) {
+        if (debtError) throw debtError;
+
+        // Mettre à jour la dette
+        const { data, error } = await supabase
+            .from('debt')
+            .update({ 
+                settled: true, 
+                settled_at: new Date().toISOString() 
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Mettre à jour le statut de la vente
+        const { error: saleError } = await supabase
+            .from('sale')
+            .update({ status: 'completed' })
+            .eq('id', debtData.sale_id);
+
+        if (saleError) throw saleError;
+
+        return {
+            id: data.id,
+            saleId: data.sale_id,
+            customerId: data.customer_id,
+            amount: parseFloat(data.amount),
+            settled: data.settled,
+            dueDate: data.due_date,
+            createdAt: data.created_at,
+            settledAt: data.settled_at,
+        } as unknown as Debt;
+
+    } catch (error) {
         console.error('Erreur lors du paiement de la dette:', error);
         return null;
     }
-
-    return {
-        id: data.id,
-        saleId: data.sale_id,
-        customerId: data.customer_id,
-        amount: parseFloat(data.amount),
-        settled: data.settled,
-        dueDate: data.due_date,
-        createdAt: data.created_at,
-        settledAt: data.settled_at,
-    } as unknown as Debt;
 };
 
 // Récupérer le nom d'un client par son ID

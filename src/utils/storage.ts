@@ -15,11 +15,7 @@ export async function uploadProductImage(file: File): Promise<string | null> {
 
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage
-      .from('products')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    return filePath;
   } catch (error) {
     console.error('Erreur lors de l\'upload:', error);
     return null;

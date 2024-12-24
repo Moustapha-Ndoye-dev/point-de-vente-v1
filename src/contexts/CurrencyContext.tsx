@@ -1,82 +1,46 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-type Currency = {
-  code: string;
-  symbol: string;
-  rate: number; // Exchange rate relative to EUR
-};
-
-const currencies: Currency[] = [
-  { code: 'XOF', symbol: 'FCFA', rate: 655.957 },
-  { code: 'EUR', symbol: '€', rate: 1 },
-  { code: 'USD', symbol: '$', rate: 1.09 },
-];
-
-type CurrencyContextType = {
-  currency: Currency;
-  setCurrency: (code: string) => void;
+interface CurrencyContextType {
+  currency: string;
+  setCurrency: (currency: string) => void;
   formatAmount: (amount: number) => string;
-  convertAmount: (amount: number) => number;
-};
+  isMobile: boolean;
+}
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// FCFA is now the default currency
-const DEFAULT_CURRENCY = currencies[0]; // XOF (FCFA)
-
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<Currency>(() => {
-    const saved = localStorage.getItem('currency');
-    if (saved) {
-      const foundCurrency = currencies.find(c => c.code === saved);
-      return foundCurrency || DEFAULT_CURRENCY;
-    }
-    return DEFAULT_CURRENCY;
-  });
+export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
+  const [currency, setCurrency] = useState<string>('XOF');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    localStorage.setItem('currency', currency.code);
-  }, [currency]);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-  const setCurrency = (code: string) => {
-    const newCurrency = currencies.find(c => c.code === code);
-    if (newCurrency) {
-      setCurrencyState(newCurrency);
-    }
-  };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const formatAmount = (amount: number) => {
-    // Convert the amount to the target currency
-    const convertedAmount = (amount * currency.rate) / DEFAULT_CURRENCY.rate;
-    
-    if (currency.code === 'XOF') {
-      // For FCFA, show without decimal places and group thousands
-      return `${Math.round(convertedAmount).toLocaleString('fr-FR')} ${currency.symbol}`;
-    }
-    
-    // For other currencies, show with 2 decimal places
-    return `${convertedAmount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })} ${currency.symbol}`;
-  };
-
-  const convertAmount = (amount: number) => {
-    // Convert from FCFA (base currency) to target currency
-    return (amount * currency.rate) / DEFAULT_CURRENCY.rate;
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency,
+      maximumFractionDigits: isMobile ? 0 : 2,
+    }).format(amount);
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, convertAmount }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, isMobile }}>
       {children}
     </CurrencyContext.Provider>
   );
-}
+};
 
-export function useCurrency() {
+export const useCurrency = () => {
   const context = useContext(CurrencyContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCurrency must be used within a CurrencyProvider');
   }
   return context;
-}
+};

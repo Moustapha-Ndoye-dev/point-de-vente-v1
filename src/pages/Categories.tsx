@@ -6,9 +6,11 @@ import Pagination from '../components/Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { fetchCategories, deleteCategory, updateCategory, addCategory } from '../data/categories';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useEnterprise } from '../contexts/EnterpriseContext';
 
 export function Categories() {
   const { addNotification } = useNotifications();
+  const { enterprise } = useEnterprise();
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('categories');
@@ -29,24 +31,28 @@ export function Categories() {
 
   useEffect(() => {
     const loadCategories = async () => {
-      const categoriesFromDB = await fetchCategories();
-      setCategories(categoriesFromDB);
+      if (enterprise?.id) {
+        const categoriesFromDB = await fetchCategories(enterprise.id);
+        setCategories(categoriesFromDB);
+      }
     };
     loadCategories();
-  }, []); // Charger les catégories au démarrage
+  }, [enterprise?.id]);
 
   const handleSubmit = async (categoryData: Omit<Category, 'id'>) => {
     try {
+      if (!enterprise?.id) return;
+      
       if (editingCategory) {
-        await updateCategory(editingCategory.id, categoryData.name, categoryData.color);
+        await updateCategory(editingCategory.id, categoryData.name, categoryData.color, enterprise.id);
         addNotification('Catégorie mise à jour avec succès', 'success');
         setEditingCategory(null);
       } else {
-        await addCategory(categoryData.name, categoryData.color);
+        await addCategory(categoryData.name, categoryData.color, enterprise.id);
         addNotification('Catégorie ajoutée avec succès', 'success');
       }
       setShowForm(false);
-      const categoriesFromDB = await fetchCategories();
+      const categoriesFromDB = await fetchCategories(enterprise.id);
       setCategories(categoriesFromDB);
     } catch (error) {
       addNotification('Une erreur est survenue', 'error');
@@ -56,7 +62,8 @@ export function Categories() {
   const handleDelete = async (categoryId: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       try {
-        const success = await deleteCategory(categoryId);
+        if (!enterprise?.id) return;
+        const success = await deleteCategory(categoryId, enterprise.id);
         if (success) {
           const updatedCategories = categories.filter((c) => c.id !== categoryId);
           setCategories(updatedCategories);
@@ -69,8 +76,8 @@ export function Categories() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Catégories</h2>
         <button
           onClick={() => {
@@ -106,7 +113,7 @@ export function Categories() {
         </div>
       )}
 
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -136,15 +143,15 @@ export function Categories() {
                       setEditingCategory(category);
                       setShowForm(true);
                     }}
-                    className="p-1 text-gray-400 hover:text-gray-500"
+                    className="text-blue-600 hover:text-blue-900 mr-3"
                   >
-                    <Edit2 className="w-5 h-5" />
+                    <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(category.id)}
-                    className="p-1 text-gray-400 hover:text-red-500"
+                    className="text-red-600 hover:text-red-900"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </td>
               </tr>

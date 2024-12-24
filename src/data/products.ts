@@ -1,65 +1,55 @@
 import { supabase } from '../supabaseClient';
 import { Product } from '../types/types';
 
-// Récupérer tous les produits avec filtre optionnel par catégorie
-export const fetchProducts = async (categoryId?: string): Promise<Product[]> => {
-  let query = supabase
+// Récupérer tous les produits pour une entreprise
+export const fetchProducts = async (enterpriseId: string): Promise<Product[]> => {
+  const { data, error } = await supabase
     .from('products')
     .select(`
-      id,
-      name,
-      price,
-      stock,
-      description,
-      category_id,
-      image_url,
-      category:categories(*)
-    `);
+      *,
+      categories (
+        id,
+        name
+      )
+    `)
+    .eq('enterprise_id', enterpriseId);
 
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-  }
-
-  const { data, error } = await query;
-  
   if (error) {
     console.error('Erreur lors de la récupération des produits:', error);
     return [];
   }
 
-  // Mapper les résultats pour correspondre à notre interface Product
-  return data.map(item => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    stock: item.stock,
-    description: item.description,
-    categoryId: item.category_id,
-    imageUrl: item.image_url,
-    category: item.category ? item.category[0] : null
+  return data.map(product => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    stock: product.stock,
+    description: product.description,
+    categoryId: product.category_id,
+    category: product.categories,
+    imageUrl: product.image_url,
+    enterpriseId: product.enterprise_id,
+    createdAt: product.created_at,
+    updatedAt: product.updated_at
   }));
 };
 
 // Ajouter un produit
-export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Product | null> => {
+export const addProduct = async (
+  productData: Omit<Product, 'id'>, 
+  enterpriseId: string
+): Promise<Product | null> => {
   try {
-    // Vérifier et convertir les valeurs numériques
-    const price = Number(productData.price);
-    const stock = Number(productData.stock);
-
-    if (isNaN(price) || isNaN(stock)) {
-      throw new Error('Prix ou stock invalide');
-    }
-
     const { data, error } = await supabase
       .from('products')
       .insert([{
         name: productData.name,
-        price: price,
-        stock: stock,
+        price: productData.price,
+        stock: productData.stock,
         description: productData.description || null,
         category_id: productData.categoryId,
-        image_url: productData.imageUrl || null
+        image_url: productData.imageUrl || null,
+        enterprise_id: enterpriseId
       }])
       .select()
       .single();
@@ -75,7 +65,8 @@ export const addProduct = async (productData: Omit<Product, 'id'>): Promise<Prod
 // Modifier un produit
 export const updateProduct = async (
   id: string,
-  productData: Partial<Omit<Product, 'id'>>
+  productData: Partial<Omit<Product, 'id'>>,
+  enterpriseId: string
 ): Promise<Product | null> => {
   const { data, error } = await supabase
     .from('products')
@@ -88,6 +79,7 @@ export const updateProduct = async (
       image_url: productData.imageUrl || null
     })
     .eq('id', id)
+    .eq('enterprise_id', enterpriseId)
     .select();
 
   if (error) {
@@ -98,11 +90,13 @@ export const updateProduct = async (
 };
 
 // Supprimer un produit
-export const deleteProduct = async (id: string): Promise<boolean> => {
+export const deleteProduct = async (id: string, enterpriseId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('products')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('enterprise_id', enterpriseId);
+
   if (error) {
     console.error('Erreur lors de la suppression du produit:', error);
     return false;
@@ -111,7 +105,7 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
 };
 
 // Récupérer un produit par ID
-export const fetchProductById = async (id: string): Promise<Product | null> => {
+export const fetchProductById = async (id: string, enterpriseId: string): Promise<Product | null> => {
   const { data, error } = await supabase
     .from('products')
     .select(`
@@ -119,10 +113,31 @@ export const fetchProductById = async (id: string): Promise<Product | null> => {
       category:categories(*)
     `)
     .eq('id', id)
+    .eq('enterprise_id', enterpriseId)
     .single();
+
   if (error) {
     console.error('Erreur lors de la récupération du produit:', error);
     return null;
   }
   return data;
-}; 
+};
+
+// Mettre à jour le stock d'un produit
+export const updateProductStock = async (
+  id: string, 
+  newStock: number,
+  enterpriseId: string
+): Promise<boolean> => {
+  const { error } = await supabase
+    .from('products')
+    .update({ stock: newStock })
+    .eq('id', id)
+    .eq('enterprise_id', enterpriseId);
+
+  if (error) {
+    console.error('Erreur lors de la mise à jour du stock:', error);
+    return false;
+  }
+  return true;
+};
