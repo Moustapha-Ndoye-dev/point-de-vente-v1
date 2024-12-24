@@ -1,6 +1,4 @@
-// Debts.tsx
-
-import { useState , useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, DollarSign, UserRound, X } from 'lucide-react';
 import { Debt, Payment } from '../types/types';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -9,40 +7,9 @@ import { fetchDebts, markDebtAsPaid, fetchCustomers } from '../data/debts';
 import { usePagination } from '../hooks/usePagination';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 import Pagination from '../components/Pagination';
-import { useNavigate } from 'react-router-dom';
 
 export function Debts() {
-  const [isLoading, setIsLoading] = useState(true);
   const { enterprise } = useEnterprise();
-  const navigate = useNavigate();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!enterprise?.id) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center text-red-600">
-          <p>Erreur : Session non valide</p>
-          <button 
-            onClick={() => navigate('/login')}
-            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-          >
-            Se connecter
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const enterpriseId = enterprise?.id;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'pending' | 'settled' | 'overdue'>('pending');
@@ -68,13 +35,16 @@ export function Debts() {
     changeItemsPerPage
   } = usePagination(debts, 10); // Default items per page
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
   const loadData = useCallback(async () => {
     if (!enterpriseId) return;
-    
+
     try {
       setIsLoading(true);
       const filters: any = {};
-      filters.limit = itemsPerPage; 
+      filters.limit = itemsPerPage;
       filters.offset = (currentPage - 1) * itemsPerPage;
       if (filterType !== 'all') {
         filters.settled = filterType === 'settled';
@@ -102,7 +72,7 @@ export function Debts() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterType, timeRange, enterpriseId, addNotification]);
+  }, [filterType, timeRange, enterpriseId, addNotification, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadData();
@@ -116,7 +86,7 @@ export function Debts() {
 
   useEffect(() => {
     if (Notification.permission === 'granted') {
-      const overdueDebts = debts.filter(debt => 
+      const overdueDebts = debts.filter(debt =>
         !debt.settled && debt.dueDate && new Date(debt.dueDate) < new Date()
       );
 
@@ -131,6 +101,19 @@ export function Debts() {
       });
     }
   }, [debts, customers, notifiedDebts, formatAmount]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const getPaidAmount = useCallback((debtId: string): number => {
     return payments
@@ -182,7 +165,7 @@ export function Debts() {
     setShowPaymentModal(false);
     setSelectedDebtId(null);
     setPaymentAmount(0);
-  }, [selectedDebtId, paymentAmount, debts, getPaidAmount, markDebtAsPaid, addNotification]);
+  }, [selectedDebtId, paymentAmount, debts, getPaidAmount, markDebtAsPaid, addNotification, enterpriseId]);
 
   const getRemainingAmount = useCallback((debt: Debt): number => {
     const remaining = debt.amount - getPaidAmount(debt.id);
@@ -367,11 +350,9 @@ export function Debts() {
             </div>
           ) : (
             <>
-              <div className="block md:hidden">
-                {renderMobileDebtList()}
-              </div>
-              
-              <div className="hidden md:block">
+              {isMobile ? (
+                renderMobileDebtList()
+              ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -476,7 +457,7 @@ export function Debts() {
                     </table>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
 
