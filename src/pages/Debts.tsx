@@ -289,8 +289,8 @@ export function Debts() {
 
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestion des dettes</h2>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -302,11 +302,11 @@ export function Debts() {
                 />
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <select
                 value={filterType}
                 onChange={(e) => { setFilterType(e.target.value as 'all' | 'pending' | 'settled' | 'overdue'); goToPage(1); }}
-                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="all">Tous les statuts</option>
                 <option value="pending">En cours</option>
@@ -316,7 +316,7 @@ export function Debts() {
               <select
                 value={timeRange}
                 onChange={(e) => { setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month'); goToPage(1); }}
-                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="all">Toute période</option>
                 <option value="today">Aujourd'hui</option>
