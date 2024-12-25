@@ -314,7 +314,9 @@ export function Debts() {
             </div>
           ) : (
             <>
-              {isMobile ? renderMobileDebtList() : (
+              {isMobile ? (
+                renderMobileDebtList()
+              ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -423,16 +425,18 @@ export function Debts() {
             </>
           )}
 
-          {debts.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={goToPage}
-              itemsPerPage={itemsPerPage}
-              onItemsPerPageChange={changeItemsPerPage}
-              itemsPerPageOptions={[5, 10, 20]}
-            />
-          )}
+          <div className="mt-4">
+            {debts.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                itemsPerPage={itemsPerPage}
+                onItemsPerPageChange={changeItemsPerPage}
+                itemsPerPageOptions={[5, 10, 20]}
+              />
+            )}
+          </div>
 
           {showPaymentModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
