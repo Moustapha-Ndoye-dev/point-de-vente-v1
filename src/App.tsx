@@ -18,6 +18,16 @@ import { checkSession } from './data/auth';
 import './index.css';
 import { useLoading } from './contexts/LoadingContext';
 import { InvoiceGenerator } from './components/InvoiceGenerator';
+import { ErrorBoundary } from 'react-error-boundary';
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div className="text-center py-12">
+      <h3 className="text-lg font-medium text-gray-900">Une erreur est survenue</h3>
+      <p className="mt-1 text-sm text-gray-500">{error.message}</p>
+    </div>
+  );
+}
 
 function App() {
   const { enterprise, setEnterprise, setLoading } = useEnterprise();
@@ -49,25 +59,27 @@ function App() {
   }, [setEnterprise, setLoading, setIsLoading]);
 
   return (
-    <NotificationProvider>
-      <CurrencyProvider>
-        <div className="min-h-screen bg-gray-50">
-          {initializing ? (
-            <div className="flex items-center justify-center h-screen">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Chargement...</p>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <NotificationProvider>
+        <CurrencyProvider>
+          <div className="min-h-screen bg-gray-50">
+            {initializing ? (
+              <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Chargement...</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              {enterprise ? <PrivateRoutes /> : <PublicRoutes />}
-              <NotificationCenter />
-            </>
-          )}
-        </div>
-      </CurrencyProvider>
-    </NotificationProvider>
+            ) : (
+              <>
+                {enterprise ? <PrivateRoutes /> : <PublicRoutes />}
+                <NotificationCenter />
+              </>
+            )}
+          </div>
+        </CurrencyProvider>
+      </NotificationProvider>
+    </ErrorBoundary>
   );
 }
 
