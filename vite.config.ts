@@ -9,4 +9,9 @@ export default defineConfig({
       input: 'index.html',
     },
   },
+  resolve: {
+    alias: {
+      'styled-components': 'styled-components/dist/styled-components.js',
+    },
+  },
 });

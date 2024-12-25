@@ -150,21 +150,43 @@ export const updateEnterprise = async (
   id: string,
   enterpriseData: Partial<Enterprise>
 ): Promise<Enterprise | null> => {
-  const { data, error } = await supabase
-    .from('enterprise')
-    .update({
-      ...enterpriseData,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  try {
+    // Vérifier que l'ID est valide
+    if (!id) {
+      throw new Error('ID d\'entreprise invalide');
+    }
 
-  if (error) {
+    console.log('ID:', id);
+    console.log('Données à mettre à jour:', enterpriseData);
+
+    // Nettoyer les données avant l'envoi
+    const cleanedData = Object.entries(enterpriseData).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== null) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    const { data, error } = await supabase
+      .from('enterprise')
+      .update({
+        ...cleanedData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Erreur de mise à jour:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'entreprise:', error);
     return null;
   }
-  return data;
 };
 
 // Vérifier le statut de l'abonnement

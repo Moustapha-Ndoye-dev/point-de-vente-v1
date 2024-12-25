@@ -7,8 +7,32 @@ import { fetchDebts, markDebtAsPaid, fetchCustomers } from '../data/debts';
 import { usePagination } from '../hooks/usePagination';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 import Pagination from '../components/Pagination';
+import { ErrorBoundary } from 'react-error-boundary';
+
+const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => {
+  return (
+    <div className="text-center py-12">
+      <h3 className="text-lg font-medium text-gray-900">Une erreur est survenue</h3>
+      <p className="mt-1 text-sm text-gray-500">{error.message}</p>
+      <button 
+        onClick={resetErrorBoundary}
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+      >
+        Réessayer
+      </button>
+    </div>
+  );
+};
 
 export function Debts() {
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <DebtsContent />
+    </ErrorBoundary>
+  );
+}
+
+function DebtsContent() {
   const { enterprise } = useEnterprise();
   const enterpriseId = enterprise?.id;
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +93,15 @@ export function Debts() {
   }, [filterType, timeRange, enterpriseId, addNotification, currentPage, itemsPerPage]);
 
   useEffect(() => {
-    loadData();
+    const cleanup = () => {
+      setDebts([]);
+      setPayments([]);
+      setCustomers({});
+      setNotifiedDebts([]);
+    };
+
+    loadData().catch(console.error);
+    return cleanup;
   }, [loadData]);
 
   useEffect(() => {
@@ -103,49 +135,49 @@ export function Debts() {
   }, [payments]);
 
   const handleAddPayment = useCallback(async () => {
-    if (!selectedDebtId || paymentAmount <= 0 || isNaN(paymentAmount)) {
-      addNotification('Montant invalide.', 'warning');
-      return;
-    }
-
-    const debt = debts.find(d => d.id === selectedDebtId);
-    if (!debt) {
-      addNotification('Dette non trouvée.', 'error');
-      return;
-    }
-
-    const totalPaid = getPaidAmount(selectedDebtId) + paymentAmount;
-    const isFullyPaid = totalPaid >= debt.amount;
-
-    const newPayment: Payment = {
-      id: crypto.randomUUID(),
-      debtId: selectedDebtId,
-      amount: paymentAmount,
-      date: new Date().toISOString(),
-      enterpriseId: enterpriseId!,
-      createdAt: new Date().toISOString(),
-    };
-
-    setPayments(prev => [...prev, newPayment]);
-
-    if (isFullyPaid) {
-      try {
-        const updatedDebt = await markDebtAsPaid(selectedDebtId);
-        if (updatedDebt) {
-          setDebts(prev => prev.map(d => (d.id === selectedDebtId ? updatedDebt : d)));
-          addNotification('Dette réglée avec succès.', 'success');
-        }
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour de la dette:', error);
-        addNotification('Erreur lors de la mise à jour de la dette.', 'error');
+    try {
+      if (!selectedDebtId || paymentAmount <= 0 || isNaN(paymentAmount)) {
+        addNotification('Montant invalide.', 'warning');
+        return;
       }
-    } else {
-      addNotification('Paiement enregistré.', 'success');
-    }
 
-    setShowPaymentModal(false);
-    setSelectedDebtId(null);
-    setPaymentAmount(0);
+      const debt = debts.find(d => d.id === selectedDebtId);
+      if (!debt) {
+        addNotification('Dette non trouvée.', 'error');
+        return;
+      }
+
+      const totalPaid = getPaidAmount(selectedDebtId) + paymentAmount;
+      const isFullyPaid = totalPaid >= debt.amount;
+
+      const newPayment: Payment = {
+        id: Math.random().toString(36).substring(2) + Date.now().toString(36),
+        debtId: selectedDebtId,
+        amount: paymentAmount,
+        date: new Date().toISOString(),
+        enterpriseId: enterpriseId!,
+        createdAt: new Date().toISOString(),
+      };
+
+      await Promise.all([
+        setPayments(prev => [...prev, newPayment]),
+        isFullyPaid ? markDebtAsPaid(selectedDebtId) : Promise.resolve()
+      ]);
+
+      if (isFullyPaid) {
+        setDebts(prev => prev.map(d => (d.id === selectedDebtId ? { ...d, settled: true } : d)));
+        addNotification('Dette réglée avec succès.', 'success');
+      } else {
+        addNotification('Paiement enregistré.', 'success');
+      }
+
+      setShowPaymentModal(false);
+      setSelectedDebtId(null);
+      setPaymentAmount(0);
+    } catch (error) {
+      console.error('Erreur lors du paiement:', error);
+      addNotification('Erreur lors du traitement du paiement.', 'error');
+    }
   }, [selectedDebtId, paymentAmount, debts, getPaidAmount, markDebtAsPaid, addNotification, enterpriseId]);
 
   const getRemainingAmount = useCallback((debt: Debt): number => {
@@ -162,6 +194,19 @@ export function Debts() {
     setShowPaymentModal(true);
   }, [debts, getRemainingAmount]);
 
+  const paymentInput = (
+    <input
+      type="number"
+      value={paymentAmount}
+      onChange={(e) => setPaymentAmount(Number(e.target.value))}
+      autoComplete="off"
+      min="0"
+      step="0.01"
+      aria-label="Montant du paiement"
+      className="w-full border rounded p-2 mb-4"
+    />
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       <>
@@ -176,6 +221,7 @@ export function Debts() {
                 placeholder="Rechercher par client..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                autoComplete="off"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -411,20 +457,24 @@ export function Debts() {
         )}
 
         {showPaymentModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-medium mb-4">Ajouter un paiement</h3>
-              <input
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                className="w-full border rounded p-2 mb-4"
-              />
-              <div className="flex justify-end space-x-2">
-                <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2 text-gray-600">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div 
+              className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Ajouter un paiement</h3>
+              {paymentInput}
+              <div className="flex justify-end space-x-3">
+                <button 
+                  onClick={() => setShowPaymentModal(false)} 
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                >
                   Annuler
                 </button>
-                <button onClick={handleAddPayment} className="px-4 py-2 bg-blue-600 text-white rounded">
+                <button 
+                  onClick={handleAddPayment} 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
                   Confirmer
                 </button>
               </div>

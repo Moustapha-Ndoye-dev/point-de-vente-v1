@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { StyleSheetManager } from 'styled-components';
 import App from './App';
 import './index.css';
 import { EnterpriseProvider } from './contexts/EnterpriseContext';
@@ -10,14 +11,16 @@ import { LoadingProvider } from './contexts/LoadingContext';
 
 createRoot(document.getElementById('app')!).render(
   <StrictMode>
-    <LoadingProvider>
-      <EnterpriseProvider>
-        <LanguageProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </LanguageProvider>
-      </EnterpriseProvider>
-    </LoadingProvider>
+    <StyleSheetManager shouldForwardProp={(prop) => prop !== 'theme'}>
+      <LoadingProvider>
+        <EnterpriseProvider>
+          <LanguageProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </LanguageProvider>
+        </EnterpriseProvider>
+      </LoadingProvider>
+    </StyleSheetManager>
   </StrictMode>,
 );
