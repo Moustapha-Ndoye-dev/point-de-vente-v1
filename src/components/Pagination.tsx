@@ -19,7 +19,7 @@ const Pagination: React.FC<PaginationProps> = ({
     itemsPerPageOptions,
 }) => {
     return (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-3 bg-white border-t border-gray-200 rounded-lg shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-3 bg-white">
             <div className="flex items-center text-sm text-gray-700 w-full sm:w-auto justify-center sm:justify-start">
                 <label htmlFor="itemsPerPage" className="mr-2 whitespace-nowrap">
                     Éléments par page:
