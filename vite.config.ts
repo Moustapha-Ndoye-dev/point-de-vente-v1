@@ -12,39 +12,8 @@ export default defineConfig({
       },
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['public/images/*.png'],
-      manifest: {
-        name: "SamaShop - Gestion de magasin",
-        short_name: "SamaShop",
-        description: "Application de gestion de magasin complète",
-        start_url: "/",
-        scope: "/",
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#007bff",
-        icons: [
-          {
-            src: "images/favicon-96x96.png",
-            sizes: "96x96",
-            type: "image/png",
-            purpose: "any"
-          },
-          {
-            src: "images/web-app-manifest-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable"
-          },
-          {
-            src: "images/web-app-manifest-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable"
-          }
-        ]
-      },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,jpg,jpeg,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -53,34 +22,65 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 an
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
+                maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
           },
           {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
+            urlPattern: /^https:\/\/api\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
             options: {
-              cacheName: 'gstatic-fonts-cache',
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 5,
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 an
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24
               }
             }
+          }
+        ],
+        cleanupOutdatedCaches: true,
+        sourcemap: true,
+        navigateFallback: 'index.html'
+      },
+      manifest: {
+        name: "SamaShop - Gestion de magasin",
+        short_name: "SamaShop",
+        description: "Application de gestion de magasin complète",
+        theme_color: "#007bff",
+        background_color: "#ffffff",
+        display: "standalone",
+        scope: "/",
+        start_url: "/",
+        orientation: "portrait",
+        icons: [
+          {
+            src: "/images/favicon-96x96.png",
+            sizes: "96x96",
+            type: "image/png"
+          },
+          {
+            src: "/images/web-app-manifest-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "/images/web-app-manifest-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
           }
         ]
       }
     })
   ],
+  server: {
+    port: 5173,
+    strictPort: true
+  },
   build: {
     outDir: 'dist',
-    copyPublicDir: true,
-  },
-  publicDir: 'public',
+    sourcemap: true
+  }
 });
