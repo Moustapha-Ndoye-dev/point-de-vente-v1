@@ -759,58 +759,60 @@ export function InvoiceGenerator() {
         </div>
 
         {/* Totaux */}
-        <div className="mt-8 flex justify-end print-no-break">
-          <div className="w-64 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-700">Montant total</span>
-              <span className="text-sm text-gray-900">
-                {formatAmount(formData.items.reduce((sum, item) => sum + item.subtotal, 0))}
-              </span>
+        <div className="mt-8 md:flex md:justify-end print-no-break">
+          <div className="w-full md:w-64 space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-700">Montant total</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatAmount(formData.items.reduce((sum, item) => sum + item.subtotal, 0))}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Acompte</span>
+                  <input
+                    type="number"
+                    value={formData.deposit}
+                    onChange={(e) => setFormData({...formData, deposit: Number(e.target.value)})}
+                    className="w-32 text-right border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex justify-between pt-3 border-t border-gray-200">
+                  <span className="text-base font-bold text-gray-900">Total à payer</span>
+                  <span className="text-base font-bold text-blue-600">
+                    {formatAmount(
+                      formData.items.reduce((sum, item) => sum + item.subtotal, 0) - formData.deposit
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-gray-700">Acompte</span>
-              <input
-                type="number"
-                value={formData.deposit}
-                onChange={(e) => setFormData({...formData, deposit: Number(e.target.value)})}
-                className="w-32 text-right border-gray-300 rounded-md focus:ring-blue-500
-                         focus:border-blue-500"
-              />
-            </div>
-            <div className="flex justify-between pt-3 border-t border-gray-200">
-              <span className="text-base font-bold text-gray-900">Total à payer</span>
-              <span className="text-base font-bold text-gray-900">
-                {formatAmount(
-                  formData.items.reduce((sum, item) => sum + item.subtotal, 0) - formData.deposit
-                )}
-              </span>
+
+            <div className="flex flex-col md:flex-row gap-3 md:justify-end">
+              <button
+                onClick={handleWhatsAppSend}
+                className="w-full md:w-auto px-4 py-2.5 text-sm font-medium text-white bg-green-600 
+                         rounded-md hover:bg-green-700 flex items-center justify-center"
+              >
+                <span>Envoyer par WhatsApp</span>
+              </button>
+              <button
+                onClick={handleReset}
+                className="w-full md:w-auto px-4 py-2.5 text-sm font-medium text-white bg-red-600
+                         rounded-md hover:bg-red-700 flex items-center justify-center"
+              >
+                <span>Réinitialiser</span>
+              </button>
+              <button
+                onClick={generatePDF}
+                className="w-full md:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600
+                         rounded-md hover:bg-blue-700 flex items-center justify-center"
+              >
+                <span>Télécharger PDF</span>
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Boutons d'action */}
-        <div className="mt-8 flex justify-end space-x-4 mt-4">
-          <button
-            onClick={handleWhatsAppSend}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 
-                     rounded-md hover:bg-green-700"
-          >
-            Envoyer par WhatsApp
-          </button>
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600
-                     rounded-md hover:bg-red-700"
-          >
-            Réinitialiser
-          </button>
-          <button
-            onClick={generatePDF}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600
-                     rounded-md hover:bg-blue-700"
-          >
-            Télécharger PDF
-          </button>
         </div>
       </div>
 
