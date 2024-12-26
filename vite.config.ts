@@ -68,9 +68,15 @@ export default defineConfig({
             }
           }
         ],
+        skipWaiting: true,
+        clientsClaim: true,
         cleanupOutdatedCaches: true,
         sourcemap: true,
-        navigateFallback: 'index.html'
+        navigateFallback: '/index.html'
+      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      devOptions: {
+        enabled: true
       }
     })
   ],
