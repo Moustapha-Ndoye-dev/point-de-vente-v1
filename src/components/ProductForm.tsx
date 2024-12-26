@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Product, Category } from '../types/types';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 import { uploadProductImage } from '../utils/storage';
-import { PackageSearch } from 'lucide-react';
+import { PackageSearch, X } from 'lucide-react';
 
 interface ProductFormProps {
   onSubmit: (data: Omit<Product, 'id'>) => Promise<void>;
@@ -11,7 +11,7 @@ interface ProductFormProps {
   onClose?: () => void;
 }
 
-export function ProductForm({ onSubmit, initialProduct, categories }: ProductFormProps) {
+export function ProductForm({ onSubmit, initialProduct, categories, onClose }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: initialProduct?.name || '',
     price: initialProduct?.price?.toString() || '',
@@ -30,7 +30,7 @@ export function ProductForm({ onSubmit, initialProduct, categories }: ProductFor
       return;
     }
     
-    onSubmit({
+    await onSubmit({
       ...formData,
       price: parseFloat(formData.price) || 0,
       stock: parseInt(formData.stock) || 0,
@@ -38,6 +38,10 @@ export function ProductForm({ onSubmit, initialProduct, categories }: ProductFor
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
+
+    if (onClose) {
+      onClose();
+    }
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,52 +55,74 @@ export function ProductForm({ onSubmit, initialProduct, categories }: ProductFor
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form id="product-form" onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Image du produit
+          </label>
+          <div className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+            {formData.imageUrl ? (
+              <div className="relative w-32 h-32 mb-4">
+                <img
+                  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${formData.imageUrl}`}
+                  alt="Aperçu"
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder-product.png';
+                    e.currentTarget.onerror = null;
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                  className="absolute -top-2 -right-2 p-1 bg-red-100 rounded-full text-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-32 h-32 mb-4 flex items-center justify-center bg-gray-100 rounded-lg">
+                <PackageSearch className="h-12 w-12 text-gray-400" />
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 
+                       file:px-4 file:rounded-full file:border-0 file:text-sm 
+                       file:font-semibold file:bg-blue-50 file:text-blue-700 
+                       hover:file:bg-blue-100"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Nom du produit</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom du produit
+            </label>
             <input
               type="text"
               required
-              className="block w-full rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-2"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2
+                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Prix</label>
-            <input
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              className="block w-full rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-2"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Stock</label>
-            <input
-              type="number"
-              required
-              min="0"
-              className="block w-full rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-2"
-              value={formData.stock}
-              onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Catégorie</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Catégorie
+            </label>
             <select
               required
-              className="block w-full rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-2"
               value={formData.categoryId}
               onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2
+                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Sélectionner une catégorie</option>
               {categories.map((category) => (
@@ -107,54 +133,52 @@ export function ProductForm({ onSubmit, initialProduct, categories }: ProductFor
             </select>
           </div>
 
-          <div className="col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Prix
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2
+                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stock
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2
+                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
-              className="block w-full rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-4 py-2"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2
+                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               style={{ resize: 'none' }}
             />
           </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Image</label>
-            <div className="flex items-center">
-              <input
-                type="file"
-                accept="image/*"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                onChange={handleImageChange}
-              />
-              {formData.imageUrl ? (
-                <img
-                  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/products/${formData.imageUrl}`}
-                  alt="Aperçu"
-                  className="h-12 w-12 object-cover rounded-lg ml-4"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder-product.png';
-                    e.currentTarget.onerror = null;
-                  }}
-                />
-              ) : (
-                <div className="h-12 w-12 rounded-lg bg-gray-200 ml-4 flex items-center justify-center">
-                  <PackageSearch className="h-6 w-6 text-gray-400" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                     transition-colors duration-200"
-          >
-            {initialProduct ? 'Mettre à jour' : 'Ajouter le produit'}
-          </button>
         </div>
       </div>
     </form>

@@ -377,24 +377,51 @@ export function Inventory() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
-                {editingProduct ? 'Modifier le produit' : 'Nouveau produit'}
-              </h3>
-              <button
-                onClick={() => setShowForm(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <X className="h-5 w-5" />
-              </button>
+          <div className="bg-white rounded-lg p-4 w-full h-full md:h-auto md:max-w-md md:mx-4 md:p-6 overflow-y-auto">
+            <div className="sticky top-0 bg-white pb-4 mb-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">
+                  {editingProduct ? 'Modifier le produit' : 'Nouveau produit'}
+                </h3>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="text-gray-400 hover:text-gray-500 p-2"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <ProductForm
-              onSubmit={handleSubmit}
-              initialProduct={editingProduct}
-              categories={categories}
-              onClose={() => setShowForm(false)}
-            />
+            
+            <div className="pb-20">
+              <ProductForm
+                onSubmit={handleSubmit}
+                initialProduct={editingProduct}
+                categories={categories}
+                onClose={() => setShowForm(false)}
+              />
+            </div>
+
+            <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200">
+              <div className="flex justify-end gap-3 max-w-md mx-auto">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 
+                           hover:bg-gray-200 rounded-md focus:outline-none 
+                           focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Annuler
+                </button>
+                <button
+                  form="product-form"
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 
+                           hover:bg-blue-700 rounded-md focus:outline-none 
+                           focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {editingProduct ? 'Mettre à jour' : 'Ajouter'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
