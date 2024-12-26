@@ -5,60 +5,40 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
-    {
-      "src": "/manifest.webmanifest",
-      "headers": {
-        "Content-Type": "application/manifest+json",
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      },
-      "dest": "/dist/manifest.webmanifest"
-    },
-    {
-      "src": "/sw.js",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate",
-        "Service-Worker-Allowed": "/"
-      },
-      "dest": "/dist/sw.js"
-    },
-    {
-      "src": "/registerSW.js",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      },
-      "dest": "/dist/registerSW.js"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/dist/assets/$1"
-    },
-    {
-      "src": "/images/(.*)",
-      "dest": "/dist/images/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/dist/index.html"
-    }
-  ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/sw.js",
       "headers": [
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         },
         {
           "key": "Service-Worker-Allowed",
           "value": "/"
         }
       ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
+  ],
+  "rewrites": [
+    { "source": "/manifest.webmanifest", "destination": "/dist/manifest.webmanifest" },
+    { "source": "/sw.js", "destination": "/dist/sw.js" },
+    { "source": "/registerSW.js", "destination": "/dist/registerSW.js" },
+    { "source": "/assets/(.*)", "destination": "/dist/assets/$1" },
+    { "source": "/images/(.*)", "destination": "/dist/images/$1" },
+    { "source": "/(.*)", "destination": "/dist/index.html" }
   ]
 }
