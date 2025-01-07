@@ -9,7 +9,7 @@ import { getPeriodicSaleInfo } from '../data/sales';
 import { fetchProducts } from '../data/products';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 
-type TimeRange = 'today' | 'week' | 'month' | 'all';
+type TimeRange = 'today' | 'week' | 'month' | 'all' | 'custom';
 
 export function SalesReport() {
   const { enterprise } = useEnterprise();
@@ -23,6 +23,8 @@ export function SalesReport() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(5);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,7 +36,7 @@ export function SalesReport() {
       try {
         const [productsFromDB, periodicSalesInfo] = await Promise.all([
           fetchProducts(enterpriseId),
-          getPeriodicSaleInfo(enterpriseId, timeRange)
+          getPeriodicSaleInfo(enterpriseId, timeRange, timeRange === 'custom' ? { startDate, endDate } : undefined)
         ]);
 
         const totalInStock = productsFromDB.reduce((sum, product) => sum + (product.stock || 0), 0);
@@ -59,7 +61,7 @@ export function SalesReport() {
     };
 
     loadData();
-  }, [timeRange, enterpriseId]);
+  }, [timeRange, enterpriseId, startDate, endDate]);
 
   const combinedSales = useMemo(() => {
     if (!enterpriseId || !salesInfo.length) {
@@ -239,29 +241,46 @@ export function SalesReport() {
               <Calendar className="w-4 h-4 mr-2" />
               {timeRange === 'today' ? 'Aujourd\'hui' :
                timeRange === 'week' ? '7 derniers jours' :
-               timeRange === 'month' ? 'Ce mois' : 'Toute période'}
+               timeRange === 'month' ? 'Ce mois' :
+               timeRange === 'custom' ? 'Personnalisé' : 'Toute période'}
             </Menu.Button>
-            <Menu.Items className="absolute right-0 z-50 mt-2 w-full sm:w-56 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg max-h-[80vh] overflow-y-auto">
-              <div className="py-1">
-                {['today', 'week', 'month', 'all'].map((range) => (
-                  <Menu.Item key={range}>
-                    {({ active }) => (
-                      <button
-                        onClick={() => setTimeRange(range as TimeRange)}
-                        className={`${
-                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
-                        } block px-4 py-3 sm:py-2 text-base sm:text-sm w-full text-left`}
-                      >
-                        {range === 'today' ? 'Aujourd\'hui' :
-                         range === 'week' ? '7 derniers jours' :
-                         range === 'month' ? 'Ce mois' : 'Toute période'}
-                      </button>
-                    )}
-                  </Menu.Item>
-                ))}
-              </div>
+            <Menu.Items className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+              {['today', 'week', 'month', 'all', 'custom'].map((range) => (
+                <Menu.Item key={range}>
+                  {({ active }) => (
+                    <button
+                      onClick={() => setTimeRange(range as TimeRange)}
+                      className={`${
+                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                      } block px-4 py-3 sm:py-2 text-base sm:text-sm w-full text-left`}
+                    >
+                      {range === 'today' ? 'Aujourd\'hui' :
+                       range === 'week' ? '7 derniers jours' :
+                       range === 'month' ? 'Ce mois' :
+                       range === 'custom' ? 'Personnalisé' : 'Toute période'}
+                    </button>
+                  )}
+                </Menu.Item>
+              ))}
             </Menu.Items>
           </Menu>
+
+          {timeRange === 'custom' && (
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          )}
 
           <button
             onClick={exportPDF}

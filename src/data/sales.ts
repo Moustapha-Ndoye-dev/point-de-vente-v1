@@ -415,9 +415,15 @@ export const getSaleInfo = async (saleId: string, enterpriseId: string): Promise
   }
 };
 
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
 export const getPeriodicSaleInfo = async (
   enterpriseId: string,
-  timeRange: 'today' | 'week' | 'month' | 'all'
+  timeRange: 'today' | 'week' | 'month' | 'all' | 'custom',
+  customRange?: DateRange
 ): Promise<{
   products: Array<{
     name: string;
@@ -440,7 +446,7 @@ export const getPeriodicSaleInfo = async (
         startDate = new Date(now.setDate(now.getDate() - 7));
         break;
       case 'month':
-        startDate = new Date(now.setDate(1));
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
       default:
         startDate = new Date(0);
@@ -504,6 +510,57 @@ export const getPeriodicSaleInfo = async (
     });
 
     const products = Array.from(productMap.values());
+
+    if (timeRange === 'custom' && customRange) {
+      const start = new Date(customRange.startDate);
+      const end = new Date(customRange.endDate);
+      end.setHours(23, 59, 59, 999); // Inclure toute la journée de fin
+
+      const filteredSales = sales.filter(sale => {
+        const saleDate = new Date(sale.created_at);
+        return saleDate >= start && saleDate <= end;
+      });
+
+      const filteredProductMap = new Map<string, {
+        name: string;
+        quantity: number;
+        unitPrice: number;
+        total: number;
+      }>();
+
+      let filteredTotalItemsSold = 0;
+      let filteredSaleTotal = 0;
+
+      filteredSales.forEach(sale => {
+        filteredSaleTotal += sale.total;
+
+        sale.items.forEach((item: any) => {
+          const productName = item.product?.name || 'Produit inconnu';
+          filteredTotalItemsSold += item.quantity;
+          
+          if (filteredProductMap.has(productName)) {
+            const existing = filteredProductMap.get(productName)!;
+            existing.quantity += item.quantity;
+            existing.total += item.subtotal;
+          } else {
+            filteredProductMap.set(productName, {
+              name: productName,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.subtotal
+            });
+          }
+        });
+      });
+
+      const filteredProducts = Array.from(filteredProductMap.values());
+
+      return {
+        products: filteredProducts,
+        saleTotal: filteredSaleTotal,
+        totalItemsSold: filteredTotalItemsSold
+      };
+    }
 
     return {
       products,

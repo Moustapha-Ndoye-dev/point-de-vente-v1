@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createEnterpriseAccount } from '../../data/enterprise';
+import { createEnterprise } from '../../data/enterprise';
+
+function generateUniqueId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -56,12 +64,17 @@ export default function RegisterPage() {
     }
 
     try {
-      const { enterprise, error: registerError } = await createEnterpriseAccount({
+      const [result, registerError] = await createEnterprise({
+        id: generateUniqueId(),
         name: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
-        address: formData.address
+        address: formData.address,
+        subscriptionStatus: 'active',
+        subscriptionEndDate: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
       if (registerError) {
@@ -70,7 +83,7 @@ export default function RegisterPage() {
         return;
       }
 
-      if (enterprise) {
+      if (result) {
         navigate('/login?registered=true');
       }
     } catch (error: any) {

@@ -11,14 +11,16 @@ import { POS } from './pages/POS';
 import { SalesReport } from './pages/SalesReport';
 import { Customers } from './pages/Customers';
 import { Debts } from './pages/Debts';
+import EnterprisesPage from './pages/admin/enterprises';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { NotificationCenter } from './components/NotificationCenter';
 import { CurrencyProvider } from './contexts/CurrencyContext';
-import { checkSession } from './data/auth';
+import { checkSession} from './data/auth';
 import './index.css';
 import { useLoading } from './contexts/LoadingContext';
 import { InvoiceGenerator } from './components/InvoiceGenerator';
 import { ErrorBoundary } from 'react-error-boundary';
+import AdminRoute from './components/AdminRoute';
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -97,8 +99,22 @@ function PrivateRoutes() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/debts" element={<Debts />} />
           <Route path="/invoices" element={<InvoiceGenerator />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route 
+            path="/admin/enterprises" 
+            element={
+              <AdminRoute>
+                <EnterprisesPage />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={<Navigate to="/admin/enterprises" replace />} 
+          />
+          <Route 
+            path="*"
+            element={<Navigate to="/admin/enterprises" replace />} 
+          />
         </Routes>
       </main>
     </>

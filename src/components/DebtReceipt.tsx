@@ -11,8 +11,6 @@ interface DebtReceiptProps {
 
 export function DebtReceipt({ sale, onClose, paymentMethod }: DebtReceiptProps) {
   useEffect(() => {
-    console.log("Mode de paiement:", paymentMethod);
-    console.log("Est-ce une dette ?", paymentMethod === 'debt');
   }, [paymentMethod]);
 
   return (
@@ -106,4 +104,4 @@ export function DebtReceipt({ sale, onClose, paymentMethod }: DebtReceiptProps) 
       </div>
     </div>
   );
-} 
+}

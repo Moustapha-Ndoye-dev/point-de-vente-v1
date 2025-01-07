@@ -61,7 +61,7 @@ export default function LoginPage() {
       return;
     }
 
-    const { session, enterprise, error: loginError } = await loginEnterprise(
+    const { enterprise, error: loginError } = await loginEnterprise(
       formData.email,
       formData.password
     );
@@ -72,25 +72,24 @@ export default function LoginPage() {
       return;
     }
 
-    if (enterprise && session) {
+    if (enterprise) {
       localStorage.setItem('enterprise', JSON.stringify(enterprise));
-      localStorage.setItem('token', session.token);
       setEnterprise(enterprise);
-      navigate('/dashboard');
+      navigate('/admin/enterprises');
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+    <div className="min-h-screen bg-white flex flex-col justify-center p-4 sm:py-12">
+      <div className="mx-auto w-full max-w-md">
+        <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">
           Connexion Entreprise
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-indigo-100/50 sm:rounded-lg sm:px-10 border border-indigo-50">
+      <div className="mx-auto w-full max-w-md">
+        <div className="bg-gray-50 p-6 sm:p-8 rounded-lg shadow-sm">
           {showSuccessMessage && (
             <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-r">
               <p className="text-sm text-green-700 font-medium">
@@ -115,10 +114,10 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   required
-                  className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
-                            shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
-                            focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
-                            bg-gray-50/50 hover:bg-white"
+                  className="h-12 appearance-none block w-full px-4 border border-gray-300 rounded-lg 
+                            placeholder-gray-500 focus:outline-none focus:ring-2 
+                            focus:ring-indigo-500 focus:border-indigo-500 transition-all
+                            bg-white hover:bg-gray-50"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -134,10 +133,10 @@ export default function LoginPage() {
                   id="password"
                   type="password"
                   required
-                  className="h-10 appearance-none block w-full px-3 border border-gray-200 rounded-md 
-                            shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 
-                            focus:ring-indigo-500/20 focus:border-indigo-500 transition-all
-                            bg-gray-50/50 hover:bg-white"
+                  className="h-12 appearance-none block w-full px-4 border border-gray-300 rounded-lg 
+                            placeholder-gray-500 focus:outline-none focus:ring-2 
+                            focus:ring-indigo-500 focus:border-indigo-500 transition-all
+                            bg-white hover:bg-gray-50"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
@@ -147,8 +146,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-10 flex justify-center items-center py-2 px-4 border border-transparent 
-                       rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 
+              className="w-full h-12 flex justify-center items-center py-2 px-4 border border-transparent 
+                       rounded-lg text-base font-medium text-white bg-indigo-600 
                        hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
                        focus:ring-indigo-500 transition-all disabled:opacity-50 
                        disabled:cursor-not-allowed"
@@ -182,4 +181,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}

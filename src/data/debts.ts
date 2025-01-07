@@ -7,7 +7,8 @@ import { Debt, Customer } from '../types/types';
 interface FetchDebtsFilters {
     settled?: boolean;
     overdue?: boolean;
-    timeRange?: 'today' | 'week' | 'month' | 'all';
+    startDate?: string;
+    endDate?: string;
 }
 
 export const fetchDebts = async (enterpriseId: string, filter: FetchDebtsFilters) => {
@@ -15,44 +16,35 @@ export const fetchDebts = async (enterpriseId: string, filter: FetchDebtsFilters
         .from('debt')
         .select('*')
         .eq('enterprise_id', enterpriseId);
-
+  
     if (filter.settled !== undefined) {
         query = query.eq('settled', filter.settled);
     }
-
+  
     if (filter.overdue) {
         const today = new Date().toISOString();
         query = query.eq('settled', false).lt('due_date', today);
     }
-
-    if (filter.timeRange && filter.timeRange !== 'all') {
-        const now = new Date();
-        let startDate: string;
-
-        switch (filter.timeRange) {
-            case 'today':
-                startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-                break;
-            case 'week':
-                startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
-                break;
-            case 'month':
-                startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
-                break;
-            default:
-                startDate = '1970-01-01T00:00:00Z';
-        }
-
-        query = query.gte('created_at', startDate);
+  
+    if (filter.startDate) {
+        const start = new Date(filter.startDate);
+        start.setHours(0, 0, 0, 0);
+        query = query.gte('created_at', start.toISOString());
     }
-
+  
+    if (filter.endDate) {
+        const end = new Date(filter.endDate);
+        end.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', end.toISOString());
+    }
+  
     const { data, error } = await query.order('created_at', { ascending: false });
-
+  
     if (error) {
         console.error('Erreur lors de la récupération des dettes:', error);
         return [];
     }
-
+  
     return data.map(debt => ({
         id: debt.id,
         saleId: debt.sale_id,
@@ -64,7 +56,7 @@ export const fetchDebts = async (enterpriseId: string, filter: FetchDebtsFilters
         settledAt: debt.settled_at,
         enterpriseId: debt.enterprise_id
     }));
-};
+  };
 
 // Récupérer les dettes en cours (non réglées)
 export const fetchPendingDebts = async (enterpriseId: string): Promise<Debt[]> => {
@@ -136,17 +128,26 @@ export const fetchOverdueDebts = async (enterpriseId: string): Promise<Debt[]> =
 
 // Récupérer les dettes du jour
 export const fetchTodaysDebts = async (enterpriseId: string): Promise<Debt[]> => {
-    return fetchDebts(enterpriseId, { timeRange: 'today' });
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+    return fetchDebts(enterpriseId, { startDate: startOfDay, endDate: endOfDay });
 };
 
 // Récupérer les dettes de la semaine
 export const fetchWeeksDebts = async (enterpriseId: string): Promise<Debt[]> => {
-    return fetchDebts(enterpriseId, { timeRange: 'week' });
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())).toISOString();
+    const endOfWeek = new Date(now.setDate(now.getDate() + 6), 23, 59, 59, 999).toISOString();
+    return fetchDebts(enterpriseId, { startDate: startOfWeek, endDate: endOfWeek });
 };
 
 // Récupérer les dettes du mois
 export const fetchMonthsDebts = async (enterpriseId: string): Promise<Debt[]> => {
-    return fetchDebts(enterpriseId, { timeRange: 'month' });
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+    return fetchDebts(enterpriseId, { startDate: startOfMonth, endDate: endOfMonth });
 };
 
 // Récupérer toutes les dettes

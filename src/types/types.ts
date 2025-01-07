@@ -110,6 +110,14 @@ export interface DashboardStats {
   }[];
 }
 
+export interface EnterpriseActivity {
+  id: string;
+  enterpriseId: string;
+  type: 'login' | 'subscription_change' | 'update' | 'creation';
+  description: string;
+  createdAt: string;
+}
+
 export interface Enterprise {
   id: string;
   name: string;
@@ -118,11 +126,13 @@ export interface Enterprise {
   address?: string;
   logoUrl?: string;
   password?: string;
-  subscriptionStatus: 'active' | 'inactive' | 'trial';
+  subscriptionStatus: 'active' | 'inactive';
   subscriptionEndDate: string;
   createdAt: string;
   updatedAt: string;
+  lastLogin?: string;
   settings?: EnterpriseSettings;
+  isAdmin?: boolean;
 }
 
 export interface EnterpriseSettings {
@@ -191,4 +201,6 @@ export interface Session {
   token: string;
   enterprise: Omit<Enterprise, 'password'>; // Exclude password for security
   expiresAt: number;
+  currentTime: number;
+  hasEnterpriseAccess: boolean;
 }

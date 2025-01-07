@@ -232,7 +232,11 @@ export const resources = {
       noCustomers: "Aucun client trouvé",
       noDebts: "Aucune dette trouvée",
       pleaseSelectCustomer: "Veuillez sélectionner un client",
-      createCategoriesFirst: "Veuillez d'abord créer des catégories avant d'ajouter des produits"
+      createCategoriesFirst: "Veuillez d'abord créer des catégories avant d'ajouter des produits",
+
+      custom: "Personnalisé",
+      startDate: "Date de début",
+      endDate: "Date de fin"
     }
   }
 };

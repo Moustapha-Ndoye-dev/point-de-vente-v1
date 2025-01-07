@@ -8,12 +8,16 @@ import { usePagination } from '../hooks/usePagination';
 import { useEnterprise } from '../contexts/EnterpriseContext';
 import Pagination from '../components/Pagination';
 
+type TimeRange = 'all' | 'today' | 'week' | 'month' | 'custom';
+
 export function Debts() {
   const { enterprise } = useEnterprise();
   const enterpriseId = enterprise?.id;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'pending' | 'settled' | 'overdue'>('pending');
-  const [timeRange, setTimeRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const { formatAmount } = useCurrency();
   const { addNotification } = useNotifications();
 
@@ -38,6 +42,9 @@ export function Debts() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
+  const [tempStartDate, setTempStartDate] = useState<string>('');
+  const [tempEndDate, setTempEndDate] = useState<string>('');
+
   const loadData = useCallback(async () => {
     if (!enterpriseId) return;
 
@@ -46,6 +53,7 @@ export function Debts() {
       const filters: any = {};
       filters.limit = itemsPerPage;
       filters.offset = (currentPage - 1) * itemsPerPage;
+      
       if (filterType !== 'all') {
         filters.settled = filterType === 'settled';
         if (filterType === 'overdue') {
@@ -54,7 +62,12 @@ export function Debts() {
       }
 
       if (timeRange !== 'all') {
-        filters.timeRange = timeRange;
+        if (timeRange === 'custom' && startDate && endDate) {
+          filters.startDate = startDate;
+          filters.endDate = endDate;
+        } else {
+          filters.timeRange = timeRange;
+        }
       }
 
       const fetchedDebts = await fetchDebts(enterpriseId, filters);
@@ -72,7 +85,7 @@ export function Debts() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterType, timeRange, enterpriseId, addNotification, currentPage, itemsPerPage]);
+  }, [filterType, timeRange, startDate, endDate, enterpriseId, currentPage, itemsPerPage, addNotification]);
 
   useEffect(() => {
     loadData();
@@ -195,6 +208,14 @@ export function Debts() {
     setShowPaymentModal(true);
   }, [debts, getRemainingAmount]);
 
+  const handleApplyDateFilter = () => {
+    if (timeRange === 'custom' && tempStartDate && tempEndDate) {
+        setStartDate(tempStartDate);
+        setEndDate(tempEndDate);
+        loadData();
+    }
+  };
+
   const renderMobileDebtList = () => (
     <div className="space-y-4">
       {currentDebts.map((debt) => {
@@ -305,15 +326,38 @@ export function Debts() {
               </select>
               <select
                 value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month')}
+                onChange={(e) => setTimeRange(e.target.value as 'all' | 'today' | 'week' | 'month' | 'custom')}
                 className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="all">Toute période</option>
                 <option value="today">Aujourd'hui</option>
                 <option value="week">Cette semaine</option>
                 <option value="month">Ce mois</option>
+                <option value="custom">Personnalisé</option>
               </select>
             </div>
+            {timeRange === 'custom' && (
+                <div className="flex items-center gap-2">
+                    <input
+                        type="date"
+                        value={tempStartDate}
+                        onChange={(e) => setTempStartDate(e.target.value)}
+                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <input
+                        type="date"
+                        value={tempEndDate}
+                        onChange={(e) => setTempEndDate(e.target.value)}
+                        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <button
+                        onClick={handleApplyDateFilter}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                        Appliquer
+                    </button>
+                </div>
+            )}
           </div>
 
           {currentDebts.length === 0 ? (

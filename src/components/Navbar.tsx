@@ -10,28 +10,33 @@ import {
   BanknoteIcon,
   LogOut,
   FileText,
+  Building,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useEnterprise } from "../contexts/EnterpriseContext";
 import { logout } from "../data/auth";
+import { useAuth } from "../data/auth";
 
 export function Navbar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { setEnterprise } = useEnterprise();
+  const { enterprise, setEnterprise } = useEnterprise();
+  const { user } = useAuth();
 
-  const navItems = [
-    { to: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
-    { to: "/inventory", icon: PackageSearch, label: "Inventaire" },
-    { to: "/categories", icon: Tags, label: "Catégories" },
-    { to: "/pos", icon: ShoppingCart, label: "Point de vente" },
-    { to: "/sales-report", icon: BarChart2, label: "Rapport des ventes" },
-    { to: "/customers", icon: Users, label: "Clients" },
-    { to: "/debts", icon: BanknoteIcon, label: "Dettes" },
-    { to: "/invoices", icon: FileText, label: "Factures" },
-  ];
+  const navItems = user?.isAdmin
+    ? [{ to: "/admin/enterprises", icon: Building, label: "Entreprises" }]
+    : [
+        { to: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
+        { to: "/inventory", icon: PackageSearch, label: "Inventaire" },
+        { to: "/categories", icon: Tags, label: "Catégories" },
+        { to: "/pos", icon: ShoppingCart, label: "Point de vente" },
+        { to: "/sales-report", icon: BarChart2, label: "Rapport des ventes" },
+        { to: "/customers", icon: Users, label: "Clients" },
+        { to: "/debts", icon: BanknoteIcon, label: "Dettes" },
+        { to: "/invoices", icon: FileText, label: "Factures" },
+      ];
 
   const NavLink = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (
     <Link
@@ -59,7 +64,7 @@ export function Navbar() {
     <nav className="bg-blue-600 text-white shadow-lg sticky top-0 z-50">
       {/* Mobile header */}
       <div className="lg:hidden flex items-center justify-between px-4 h-16">
-        <h1 className="text-lg font-bold">Sama Shop</h1>
+        <h1 className="text-lg font-bold">{enterprise?.name || "Sama Shop"}</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -105,7 +110,7 @@ export function Navbar() {
           <div className="flex justify-between h-14">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-lg font-bold">Sama Shop</h1>
+                <h1 className="text-lg font-bold">{enterprise?.name || "Sama Shop"}</h1>
               </div>
               <div className="ml-4 flex items-center space-x-1">
                 {navItems.map((item) => (
