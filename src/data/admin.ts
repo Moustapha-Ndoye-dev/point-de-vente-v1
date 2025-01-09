@@ -8,18 +8,20 @@ export async function getEnterprises(): Promise<Enterprise[]> {
 
   if (error) throw error;
 
-  // Mapper les données pour correspondre au type Enterprise
-  return data.map((enterprise: any) => ({
-    id: enterprise.id,
-    name: enterprise.name,
-    email: enterprise.email,
-    phone: enterprise.phone, // Ajoutez cette ligne
-    subscriptionStatus: enterprise.subscription_status,
-    subscriptionEndDate: enterprise.subscription_end_date,
-    createdAt: enterprise.created_at,
-    updatedAt: enterprise.updated_at,
-    lastLogin: enterprise.last_login,
-  }));
+  // Exclure l'email de l'administrateur
+  return data
+    .filter((enterprise: any) => enterprise.email !== 'adminsamashop@gmail.com')
+    .map((enterprise: any) => ({
+      id: enterprise.id,
+      name: enterprise.name,
+      email: enterprise.email,
+      phone: enterprise.phone,
+      subscriptionStatus: enterprise.subscription_status,
+      subscriptionEndDate: enterprise.subscription_end_date,
+      createdAt: enterprise.created_at,
+      updatedAt: enterprise.updated_at,
+      lastLogin: enterprise.last_login,
+    }));
 }
 
 export const activateEnterprise = async (id: string): Promise<void> => {
@@ -79,7 +81,10 @@ export async function getEnterprisesThisMonth(): Promise<Enterprise[]> {
   if (error) throw error;
 
   return data
-    .filter((enterprise: any) => new Date(enterprise.created_at).getMonth() === currentMonth)
+    .filter((enterprise: any) => 
+      new Date(enterprise.created_at).getMonth() === currentMonth &&
+      enterprise.email !== 'adminsamashop@gmail.com'
+    )
     .map((enterprise: any) => ({
       id: enterprise.id,
       name: enterprise.name,

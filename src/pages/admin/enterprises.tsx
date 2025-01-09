@@ -16,8 +16,12 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [statusToChange, setStatusToChange] = useState<boolean | null>(null);
   const { addNotification } = useNotifications();
-
+  const { user } = useAuth();
   const handleStatusChange = (status: boolean) => {
+    if (user?.email !== 'adminsamashop@gmail.com') {
+      addNotification('Seul l\'administrateur peut changer le statut.', 'error');
+      return;
+    }
     setStatusToChange(status);
     setShowConfirmationModal(true);
   };
@@ -61,12 +65,12 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
             </span>
           </div>
           <div>
-            <span className="text-gray-500">Dernière connexion:</span>
+            {/* <span className="text-gray-500">Dernière connexion:</span>
             <span className="ml-2 font-medium">
               {enterprise.lastLogin ? 
                 formatDistanceToNow(new Date(enterprise.lastLogin), { addSuffix: true, locale: fr }) : 
                 'il y a un moment'}
-            </span>
+            </span> */}
           </div>
         </div>
 
@@ -129,7 +133,7 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
                   <p className="font-medium text-gray-900">
                     {enterprise.lastLogin ? 
                       formatDistanceToNow(new Date(enterprise.lastLogin), { addSuffix: true, locale: fr }) : 
-                      'Jamais'}
+                      'Il y a un moment...'}
                   </p>
                 </div>
               </div>
@@ -167,6 +171,7 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
 }
 
 import AdminRoute from '../../components/AdminRoute';
+import { useAuth } from '../../data/auth';
 
 export default function EnterprisesPage() {
   return (
