@@ -71,10 +71,10 @@ export default function RegisterPage() {
         password: formData.password,
         phone: formData.phone,
         address: formData.address,
-        subscriptionStatus: 'active',
-        subscriptionEndDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        subscription_status: 'active',
+        subscription_end_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
 
       if (registerError) {

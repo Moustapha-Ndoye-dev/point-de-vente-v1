@@ -126,11 +126,11 @@ export interface Enterprise {
   address?: string;
   logoUrl?: string;
   password?: string;
-  subscriptionStatus: 'active' | 'inactive';
-  subscriptionEndDate: string;
-  createdAt: string;
-  updatedAt: string;
-  lastLogin?: string;
+  subscription_status: 'active' | 'inactive';
+  subscription_end_date: string;
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
   settings?: EnterpriseSettings;
   isAdmin?: boolean;
 }

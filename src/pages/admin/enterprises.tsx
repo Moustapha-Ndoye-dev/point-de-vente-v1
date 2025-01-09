@@ -59,9 +59,9 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
           <div>
             <span className="text-gray-500">Statut:</span>
             <span className={`ml-2 font-medium ${
-              enterprise.subscriptionStatus ? 'text-green-600' : 'text-red-600'
+              enterprise.subscription_status ? 'text-green-600' : 'text-red-600'
             }`}>
-              {enterprise.subscriptionStatus ? 'Compte activer' : 'Compte desactiver'}
+              {enterprise.subscription_status ? 'Compte activer' : 'Compte desactiver'}
             </span>
           </div>
           <div>
@@ -78,7 +78,7 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
           <button
             onClick={() => handleStatusChange(true)}
             className={`w-full py-1.5 px-3 sm:py-2 sm:px-4 rounded-md sm:rounded-lg bg-green-50 text-green-600 hover:bg-green-100 text-xs sm:text-sm ${
-              enterprise.subscriptionStatus ? 'hidden' : ''
+              enterprise.subscription_status ? 'hidden' : ''
             }`}
           >
             Activer
@@ -86,7 +86,7 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
           <button
             onClick={() => handleStatusChange(false)}
             className={`w-full py-1.5 px-3 sm:py-2 sm:px-4 rounded-md sm:rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs sm:text-sm ${
-              !enterprise.subscriptionStatus ? 'hidden' : ''
+              !enterprise.subscription_status ? 'hidden' : ''
             }`}
           >
             Désactiver
@@ -131,8 +131,8 @@ function EnterpriseCard({ enterprise, onStatusChange }: {
                 <div>
                   <p className="text-sm text-gray-500">Dernière connexion:</p>
                   <p className="font-medium text-gray-900">
-                    {enterprise.lastLogin ? 
-                      formatDistanceToNow(new Date(enterprise.lastLogin), { addSuffix: true, locale: fr }) : 
+                    {enterprise.last_login ? 
+                      formatDistanceToNow(new Date(enterprise.last_login), { addSuffix: true, locale: fr }) : 
                       'Il y a un moment...'}
                   </p>
                 </div>
@@ -210,7 +210,7 @@ function EnterpriseContent() {
   }, []);
 
   useEffect(() => {
-    const newUsersThisMonth = enterprises.filter(e => new Date(e.createdAt).getMonth() === new Date().getMonth());
+    const newUsersThisMonth = enterprises.filter(e => new Date(e.created_at).getMonth() === new Date().getMonth());
     if (newUsersThisMonth.length > 0) {
       addNotification(`${newUsersThisMonth.length} nouveaux utilisateurs inscrits ce mois-ci`, 'info');
     }
@@ -235,11 +235,11 @@ function EnterpriseContent() {
                          enterprise.email.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'true' && enterprise.subscriptionStatus) ||
-                         (filterStatus === 'false' && !enterprise.subscriptionStatus) ||
-                         (filterStatus === 'active' && isEnterpriseActive(enterprise.lastLogin ?? null)) ||
-                         (filterStatus === 'inactive' && !isEnterpriseActive(enterprise.lastLogin ?? null) && enterprise.subscriptionStatus) ||
-                         (filterStatus === 'thisMonth' && new Date(enterprise.createdAt).getMonth() === new Date().getMonth());
+                         (filterStatus === 'true' && enterprise.subscription_status) ||
+                         (filterStatus === 'false' && !enterprise.subscription_status) ||
+                         (filterStatus === 'active' && isEnterpriseActive(enterprise.last_login ?? null)) ||
+                         (filterStatus === 'inactive' && !isEnterpriseActive(enterprise.last_login ?? null) && enterprise.subscription_status) ||
+                         (filterStatus === 'thisMonth' && new Date(enterprise.created_at).getMonth() === new Date().getMonth());
     
     return matchesSearch && matchesStatus;
   });
@@ -247,11 +247,11 @@ function EnterpriseContent() {
   const totalPages = Math.ceil(filteredEnterprises.length / itemsPerPage);
   const paginatedEnterprises = filteredEnterprises.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const activeEnterprises = enterprises.filter(e => isEnterpriseActive(e.lastLogin ?? null));
+  const activeEnterprises = enterprises.filter(e => isEnterpriseActive(e.last_login ?? null));
   const inactiveEnterprises = enterprises.filter(e => 
-    !isEnterpriseActive(e.lastLogin ?? null) && e.subscriptionStatus
+    !isEnterpriseActive(e.last_login ?? null) && e.subscription_status
   );
-  const monthlyRevenue = enterprises.filter(e => e.subscriptionStatus).length * 10000;
+  const monthlyRevenue = enterprises.filter(e => e.subscription_status).length * 10000;
 
   const newUsersThisMonth = monthlyEnterprises.length;
 
@@ -288,7 +288,7 @@ function EnterpriseContent() {
         
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="text-gray-500 text-sm mb-2">Entreprises actives</div>
-          <div className="text-2xl font-bold text-green-600">{enterprises.filter(e => e.subscriptionStatus).length}</div>
+          <div className="text-2xl font-bold text-green-600">{enterprises.filter(e => e.subscription_status).length}</div>
         </div>
         
         <div className="bg-white rounded-xl shadow-lg p-6">

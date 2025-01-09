@@ -16,11 +16,11 @@ export async function getEnterprises(): Promise<Enterprise[]> {
       name: enterprise.name,
       email: enterprise.email,
       phone: enterprise.phone,
-      subscriptionStatus: enterprise.subscription_status,
-      subscriptionEndDate: enterprise.subscription_end_date,
-      createdAt: enterprise.created_at,
-      updatedAt: enterprise.updated_at,
-      lastLogin: enterprise.last_login,
+      subscription_status: enterprise.subscription_status,
+      subscription_end_date: enterprise.subscription_end_date,
+      created_at: enterprise.created_at,
+      updated_at: enterprise.updated_at,
+      last_login: enterprise.last_login,
     }));
 }
 
@@ -90,10 +90,10 @@ export async function getEnterprisesThisMonth(): Promise<Enterprise[]> {
       name: enterprise.name,
       email: enterprise.email,
       phone: enterprise.phone,
-      subscriptionStatus: enterprise.subscription_status,
-      subscriptionEndDate: enterprise.subscription_end_date,
-      createdAt: enterprise.created_at,
-      updatedAt: enterprise.updated_at,
-      lastLogin: enterprise.last_login,
+      subscription_status: enterprise.subscription_status,
+      subscription_end_date: enterprise.subscription_end_date,
+      created_at: enterprise.created_at,
+      updated_at: enterprise.updated_at,
+      last_login: enterprise.last_login,
     }));
 }

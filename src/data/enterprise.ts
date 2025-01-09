@@ -1,5 +1,6 @@
 import { supabase } from "../supabaseClient";
 import { Enterprise } from "../types/types";
+import bcrypt from 'bcryptjs';
 
 export async function getEnterprise(id: string) {
   const { data, error } = await supabase
@@ -39,21 +40,29 @@ export async function updateEnterpriseSubscription(id: string) {
   return data;
 }
 
-export async function createEnterprise(enterprise: Enterprise) {
-  const { data, error } = await supabase
-    .from("enterprise")
-    .insert({
-      ...enterprise,
-      subscription_status: true,
-      subscription_end_date: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .select();
+  export async function createEnterprise(enterprise: Enterprise) {
+    if (!enterprise.password) {
+      throw new Error("Le mot de passe est requis pour créer une entreprise.");
+    }
 
-  if (error) throw error;
-  return data;
-}
+    // Hachage du mot de passe
+    const hashedPassword = await bcrypt.hash(enterprise.password, 10);
+
+    const { data, error } = await supabase
+      .from("enterprise")
+      .insert({
+        ...enterprise,
+        password: hashedPassword, // Stocker le mot de passe haché
+        subscription_status: true,
+        subscription_end_date: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select();
+
+    if (error) throw error;
+    return data;
+  }
 
 export async function getActiveEnterprises() {
   const { data, error } = await supabase
